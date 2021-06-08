@@ -233,3 +233,23 @@
 		return ..()
 	return TRUE
 
+/datum/action/xeno_action/endure
+	name = "Turn small"
+	action_icon_state = "ignore_pain"
+	mechanics_text = "Becoma smol."
+	ability_name = "Endure"
+	var/image_ref = FALSE
+
+/datum/action/xeno_action/endure/action_activate()
+	var/mob/living/carbon/xenomorph/X = owner
+	if(image_ref)
+		X.client.images -= image_ref
+		image_ref = FALSE
+		return TRUE
+	var/mutable_appearance/shrunkxeno = new(X)
+	shrunkxeno.transform = matrix().Scale(0.3, 0.3)
+	shrunkxeno.override = TRUE
+	X.client.images += shrunkxeno
+	image_ref = shrunkxeno
+
+
