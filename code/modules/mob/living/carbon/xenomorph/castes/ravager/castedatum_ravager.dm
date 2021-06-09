@@ -48,6 +48,7 @@
 		/datum/action/xeno_action/activable/charge,
 		/datum/action/xeno_action/activable/ravage,
 		/datum/action/xeno_action/endure,
+		/datum/action/xeno_action/turn_small,
 	)
 
 /datum/xeno_caste/ravager/young
