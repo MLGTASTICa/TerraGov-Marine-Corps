@@ -242,15 +242,21 @@
 
 /datum/action/xeno_action/turn_small/action_activate()
 	var/mob/living/carbon/xenomorph/X = owner
+	var/icon/our_manip_icon = icon(X.icon, X.icon_state)
+	var/a = 32
+	var/b = 32
+	var/contor = 30
 	if(image_ref)
 		X.client.images -= image_ref
 		image_ref = FALSE
 		return TRUE
-	var/mutable_appearance/shrunkxeno = X
-	shrunkxeno.loc = X
-	shrunkxeno.transform = matrix().Scale(0.3, 0.3)
-	shrunkxeno.override = TRUE
-	X.client.images += shrunkxeno
-	image_ref = shrunkxeno
-
-
+	while(contor)
+		contor--
+		our_manip_icon.Scale(a,b)
+		our_manip_icon.Scale(a/2,b/2)
+		our_manip_icon.Scale(a*2,b*2)
+	var/image/our_imagine = image(our_manip_icon, pixel_x = -(X.pixel_x), pixel_y = -(X.pixel_y))
+	our_imagine.override = TRUE
+	X.client.images += our_imagine
+	our_imagine.loc = X
+	image_ref = our_imagine
