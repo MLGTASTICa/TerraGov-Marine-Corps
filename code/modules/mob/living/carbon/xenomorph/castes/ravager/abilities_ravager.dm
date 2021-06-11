@@ -246,7 +246,7 @@
 		X.client.images -= image_ref
 		image_ref = FALSE
 		return TRUE
-	var/mutable_appearance/shrunkxeno = new(X)
+	var/mutable_appearance/shrunkxeno = X
 	shrunkxeno.loc = X
 	shrunkxeno.transform = matrix().Scale(0.3, 0.3)
 	shrunkxeno.override = TRUE
