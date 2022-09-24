@@ -30,6 +30,7 @@
 	var/next_move_dir_sub // On next move, subtract this dir from the move that would otherwise be done
 	var/datum/click_intercept = null // Needs to implement InterceptClickOn(user,params,atom) proc
 	var/move_delay = 0
+	var/last_movement_try = 0
 	var/area = null
 	var/obj/screen/click_catcher/void = null
 	var/list/char_render_holders			//Should only be a key-value list of north/south/east/west = obj/screen.

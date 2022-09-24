@@ -42,14 +42,14 @@
 	toggle_action?.update_button_icon(should_enable)
 	if(should_enable)
 		active = TRUE
-		RegisterSignal(bumper, COMSIG_MOVABLE_BUMP, bump_action_path)
+		RegisterSignal(bumper, COMSIG_MOB_PREMOVE, bump_action_path)
 		return
 
 	var/obj/item/held_item = bumper.get_inactive_held_item()
 	if(held_item?.flags_item & CAN_BUMP_ATTACK)
 		return
 	active = FALSE
-	UnregisterSignal(bumper, COMSIG_MOVABLE_BUMP)
+	UnregisterSignal(bumper, COMSIG_MOB_PREMOVE)
 
 
 /datum/component/bump_attack/proc/living_bump_action_checks(atom/target)
@@ -69,8 +69,19 @@
 		if(INTENT_HELP, INTENT_GRAB)
 			return NONE
 
-/datum/component/bump_attack/proc/living_bump_action(datum/source, atom/target)
+/datum/component/bump_attack/proc/living_bump_action(datum/source, direction)
 	SIGNAL_HANDLER
+	var/turf/to_check = get_step(source, direction)
+	var/mob/living/target
+	for(var/mob/living/possible_target in to_check.contents)
+		if(possible_target.stat == DEAD)
+			continue
+		if(possible_target.resting)
+			continue
+		target = possible_target
+		break
+	if(!target)
+		return
 	. = living_bump_action_checks(target)
 	if(!isnull(.))
 		return
@@ -78,19 +89,40 @@
 
 
 ///Handles human pre-bump attack checks
-/datum/component/bump_attack/proc/human_bump_action(datum/source, atom/target)
+/datum/component/bump_attack/proc/human_bump_action(datum/source, direction)
 	SIGNAL_HANDLER
+	var/turf/to_check = get_step(source, direction)
+	var/mob/living/target
+	for(var/mob/living/possible_target in to_check.contents)
+		if(possible_target.stat == DEAD)
+			continue
+		if(possible_target.resting)
+			continue
+		target = possible_target
+		break
+	if(!target)
+		return
 	var/mob/living/carbon/human/bumper = parent
 	. = carbon_bump_action_checks(target)
 	if(!isnull(.))
 		return
-	var/mob/living/living_target = target
-	if(bumper.faction == living_target.faction)
+	if(bumper.faction == target.faction)
 		return //FF
 	INVOKE_ASYNC(src, .proc/human_do_bump_action, target)
 
-/datum/component/bump_attack/proc/xeno_bump_action(datum/source, atom/target)
+/datum/component/bump_attack/proc/xeno_bump_action(datum/source, direction)
 	SIGNAL_HANDLER
+	var/turf/to_check = get_step(source, direction)
+	var/mob/target
+	for(var/mob/living/possible_target in to_check.contents)
+		if(possible_target.stat == DEAD)
+			continue
+		if(possible_target.resting)
+			continue
+		target = possible_target
+		break
+	if(!target)
+		return
 	var/mob/living/carbon/xenomorph/bumper = parent
 	. = carbon_bump_action_checks(target)
 	if(!isnull(.))

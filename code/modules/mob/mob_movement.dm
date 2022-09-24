@@ -63,6 +63,8 @@
 #define MOVEMENT_DELAY_BUFFER_DELTA 1.25
 
 /client/Move(n, direct)
+	if(mob && isliving(mob))
+		SEND_SIGNAL(mob, COMSIG_MOB_PREMOVE, direct)
 	if(world.time < move_delay) //do not move anything ahead of this check please
 		return FALSE
 	else
