@@ -62,7 +62,7 @@ GLOBAL_LIST_INIT(no_sticky_resin, typecacheof(list(/obj/item/clothing/mask/faceh
 	///Base fire stacks added on hit if the projectile has AMMO_INCENDIARY
 	var/incendiary_strength = 10
 
-/datum/ammo/proc/do_at_max_range(obj/projectile/proj)
+/datum/ammo/proc/do_at_max_range(turf/T, obj/projectile/proj)
 	return
 
 /datum/ammo/proc/on_shield_block(mob/M, obj/projectile/proj) //Does it do something special when shield blocked? Ie. a flare or grenade that still blows up.
@@ -204,11 +204,8 @@ GLOBAL_LIST_INIT(no_sticky_resin, typecacheof(list(/obj/item/clothing/mask/faceh
 		victim.apply_damage(fire_burst_damage, BURN, null, armor_block, updating_health = TRUE) //Placeholder damage, will be a ammo var
 
 		staggerstun(victim, proj, 30, stagger = 0.5, slowdown = 0.5, shake = 0)
-
-		var/living_hard_armor = victim.hard_armor.getRating("fire")
-		if(victim.get_fire_resist() > 0 && living_hard_armor < 100) //won't ignite fully fireproof mobs
-			victim.adjust_fire_stacks(CEILING(5 - (living_hard_armor * 0.1), 1))
-			victim.IgniteMob()
+		victim.adjust_fire_stacks(5)
+		victim.IgniteMob()
 
 
 /datum/ammo/proc/fire_bonus_projectiles(obj/projectile/main_proj, atom/shooter, atom/source, range, speed, angle, target)
@@ -1290,7 +1287,7 @@ datum/ammo/bullet/revolver/tp44
 	fire_directionalburst(proj, proj.firer, proj.shot_from, 4, 3, Get_Angle(proj.firer, T) )
 	bonus_projectiles_amount = 0
 
-/datum/ammo/tx54/do_at_max_range(obj/projectile/proj)
+/datum/ammo/tx54/do_at_max_range(turf/T, obj/projectile/proj)
 	bonus_projectiles_amount = 7
 	playsound(proj, sound(get_sfx("explosion_small")), 30, falloff = 5)
 	fire_directionalburst(proj, proj.firer, proj.shot_from, 4, 3, Get_Angle(proj.firer, get_turf(proj)) )
@@ -1308,7 +1305,7 @@ datum/ammo/bullet/revolver/tp44
 	name = "Shrapnel"
 	icon_state = "flechette"
 	flags_ammo_behavior = AMMO_BALLISTIC|AMMO_SUNDERING|AMMO_PASS_THROUGH_MOB
-	accuracy_var_low = 15
+	accuracy_var_low = 5
 	accuracy_var_high = 5
 	max_range = 4
 	damage = 20
@@ -1316,8 +1313,8 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 3
 	damage_falloff = 0
 
-/datum/ammo/tx54_spread/on_hit_mob(mob/M, obj/projectile/proj)
-	staggerstun(M, proj, max_range = 3, stagger = 0.1, slowdown = 0.1, shake = 0)
+/datum/ammo/bullet/tx54_spread/on_hit_mob(mob/M, obj/projectile/proj)
+	staggerstun(M, proj, max_range = 3, stagger = 0.3, slowdown = 0.3, shake = 0)
 
 /datum/ammo/bullet/tx54_spread/incendiary
 	name = "incendiary flechette"
@@ -1325,6 +1322,9 @@ datum/ammo/bullet/revolver/tp44
 	damage = 15
 	penetration = 10
 	sundering = 1.5
+
+/datum/ammo/bullet/tx54_spread/incendiary/on_hit_mob(mob/M, obj/projectile/proj)
+	return
 
 /datum/ammo/bullet/tx54_spread/incendiary/drop_flame(turf/T)
 	if(!istype(T))
@@ -1352,11 +1352,10 @@ datum/ammo/bullet/revolver/tp44
 	drop_nade(get_turf(O))
 
 /datum/ammo/tx54/he/on_hit_turf(turf/T, obj/projectile/P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
 
-/datum/ammo/tx54/he/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
-
+/datum/ammo/tx54/he/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 //10-gauge Micro rail shells - aka micronades
 /datum/ammo/bullet/micro_rail
@@ -1375,7 +1374,7 @@ datum/ammo/bullet/revolver/tp44
 	///projectile speed for the bonus projectiles
 	var/bonus_projectile_speed = 3
 
-/datum/ammo/bullet/micro_rail/do_at_max_range(obj/projectile/proj)
+/datum/ammo/bullet/micro_rail/do_at_max_range(turf/T, obj/projectile/proj)
 	bonus_projectiles_amount = bonus_projectile_quantity
 	playsound(proj, sound(get_sfx("explosion_small")), 30, falloff = 5)
 	var/datum/effect_system/smoke_spread/smoke = new
@@ -1424,7 +1423,7 @@ datum/ammo/bullet/revolver/tp44
 	name = "Shrapnel"
 	icon_state = "flechette"
 	flags_ammo_behavior = AMMO_BALLISTIC|AMMO_SUNDERING|AMMO_PASS_THROUGH_MOB
-	accuracy_var_low = 15
+	accuracy_var_low = 5
 	accuracy_var_high = 5
 	max_range = 7
 	damage = 20
@@ -1432,8 +1431,8 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 3
 	damage_falloff = 1
 
-/datum/ammo/micro_rail_spread/on_hit_mob(mob/M, obj/projectile/proj)
-	staggerstun(M, proj, max_range = 5, stagger = 0.3, slowdown = 0.3, shake = 0)
+/datum/ammo/bullet/micro_rail_spread/on_hit_mob(mob/M, obj/projectile/proj)
+	staggerstun(M, proj, max_range = 5, stagger = 0.5, slowdown = 0.5, shake = 0)
 
 /datum/ammo/bullet/micro_rail_spread/incendiary
 	name = "incendiary flechette"
@@ -1443,8 +1442,8 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 1.5
 	max_range = 6
 
-/datum/ammo/micro_rail_spread/incendiary/on_hit_mob(mob/M, obj/projectile/proj)
-	staggerstun(M, proj, max_range = 5, stagger = 0.1, slowdown = 0.1, shake = 0)
+/datum/ammo/bullet/micro_rail_spread/incendiary/on_hit_mob(mob/M, obj/projectile/proj)
+	staggerstun(M, proj, max_range = 5, stagger = 0.2, slowdown = 0.2, shake = 0)
 
 /datum/ammo/bullet/micro_rail_spread/incendiary/drop_flame(turf/T)
 	if(!istype(T))
@@ -1478,13 +1477,13 @@ datum/ammo/bullet/revolver/tp44
 	var/datum/effect_system/smoke_spread/smoke = new smoketype()
 	smoke.set_up(0, T, rand(1,2))
 	smoke.start()
-	for(var/mob/living/carbon/victim in range(1, T))
+	for(var/mob/living/carbon/victim in get_hear(2, T))
 		victim.visible_message(span_danger("[victim] is hit by the bomblet blast!"),
 			isxeno(victim) ? span_xenodanger("We are hit by the bomblet blast!") : span_highdanger("you are hit by the bomblet blast!"))
 		var/armor_block = victim.get_soft_armor("bomb")
-		victim.apply_damage(10, BRUTE, null, armor_block, updating_health = FALSE)
-		victim.apply_damage(10, BURN, null, armor_block, updating_health = TRUE)
-		staggerstun(victim, P, stagger = 0.5, slowdown = 0.5)
+		victim.apply_damage(15, BRUTE, null, armor_block, updating_health = FALSE)
+		victim.apply_damage(15, BURN, null, armor_block, updating_health = TRUE)
+		staggerstun(victim, P, stagger = 1, slowdown = 1)
 
 /datum/ammo/micro_rail_cluster/on_leave_turf(turf/T, atom/firer, obj/projectile/proj)
 	///chance to detonate early, scales with distance and capped, to avoid lots of immediate detonations, and nothing reach max range respectively.
@@ -1493,16 +1492,16 @@ datum/ammo/bullet/revolver/tp44
 		proj.proj_max_range = proj.distance_travelled
 
 /datum/ammo/micro_rail_cluster/on_hit_mob(mob/M, obj/projectile/P)
-	detonate(get_turf(M), P)
+	detonate(get_turf(P), P)
 
 /datum/ammo/micro_rail_cluster/on_hit_obj(obj/O, obj/projectile/P)
-	detonate(get_turf(O), P)
+	detonate(get_turf(P), P)
 
 /datum/ammo/micro_rail_cluster/on_hit_turf(turf/T, obj/projectile/P)
-	detonate(T, P)
+	detonate(T.density ? P.loc : T, P)
 
-/datum/ammo/micro_rail_cluster/do_at_max_range(obj/projectile/P)
-	detonate(get_turf(P), P)
+/datum/ammo/micro_rail_cluster/do_at_max_range(turf/T, obj/projectile/P)
+	detonate(T.density ? P.loc : T, P)
 
 /datum/ammo/smoke_burst
 	name = "micro smoke canister"
@@ -1529,16 +1528,16 @@ datum/ammo/bullet/revolver/tp44
 	smoke.start()
 
 /datum/ammo/smoke_burst/on_hit_mob(mob/M, obj/projectile/P)
-	drop_nade(get_turf(M))
+	drop_nade(get_turf(P))
 
 /datum/ammo/smoke_burst/on_hit_obj(obj/O, obj/projectile/P)
-	drop_nade(get_turf(O))
+	drop_nade(get_turf(P))
 
 /datum/ammo/smoke_burst/on_hit_turf(turf/T, obj/projectile/P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
 
-/datum/ammo/smoke_burst/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
+/datum/ammo/smoke_burst/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 /*
 //================================================
@@ -1566,7 +1565,7 @@ datum/ammo/bullet/revolver/tp44
 	bullet_color = LIGHT_COLOR_FIRE
 
 /datum/ammo/rocket/drop_nade(turf/T)
-	explosion(T, 0, 4, 6, 5)
+	explosion(T, 0, 4, 6, 2)
 
 /datum/ammo/rocket/on_hit_mob(mob/M, obj/projectile/P)
 	drop_nade(get_turf(M))
@@ -1575,10 +1574,10 @@ datum/ammo/bullet/revolver/tp44
 	drop_nade(get_turf(O))
 
 /datum/ammo/rocket/on_hit_turf(turf/T, obj/projectile/P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
 
-/datum/ammo/rocket/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
+/datum/ammo/rocket/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 /datum/ammo/rocket/ap
 	name = "anti-armor rocket"
@@ -1690,17 +1689,17 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 50
 
 /datum/ammo/rocket/recoilless/drop_nade(turf/T)
-	explosion(T, 0, 3, 4, 5)
+	explosion(T, 0, 3, 4, 2)
 
-/datum/ammo/rocket/recoilless/heat //placeholder/adminbus for now
+/datum/ammo/rocket/recoilless/heat
 	name = "HEAT shell"
 	hud_state = "shell_heat"
-	damage = 175
+	damage = 200
 	penetration = 100
-	sundering = 100
+	sundering = 0
 
 /datum/ammo/rocket/recoilless/heat/drop_nade(turf/T)
-	explosion(T, 0, 2, 3, 5)
+	explosion(T, flash_range = 1)
 
 /datum/ammo/rocket/recoilless/light
 	name = "light explosive shell"
@@ -1713,7 +1712,38 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 25
 
 /datum/ammo/rocket/recoilless/light/drop_nade(turf/T)
-	explosion(T, 0, 1, 8, 5)
+	explosion(T, 0, 1, 8, 1)
+
+/datum/ammo/rocket/recoilless/chemical
+	name = "low velocity chemical shell"
+	hud_state = "shell_le"
+	flags_ammo_behavior = AMMO_ROCKET|AMMO_SUNDERING|AMMO_IFF //We want this to specifically go farther than onscreen range and pass through friendlies.
+	accurate_range = 21
+	max_range = 21
+	damage = 10
+	penetration = 0
+	sundering = 0
+	/// Smoke type created when projectile detonates.
+	var/datum/effect_system/smoke_spread/smoketype = /datum/effect_system/smoke_spread/bad
+	/// Radius this smoke will encompass on detonation.
+	var/smokeradius = 7
+
+/datum/ammo/rocket/recoilless/chemical/drop_nade(turf/T)
+	var/datum/effect_system/smoke_spread/smoke = new smoketype()
+	playsound(T, 'sound/effects/smoke.ogg', 25, 1, 4)
+	smoke.set_up(smokeradius, T, rand(5,9))
+	smoke.start()
+	explosion(T, flash_range = 1)
+
+/datum/ammo/rocket/recoilless/chemical/cloak
+	name = "low velocity chemical shell"
+	hud_state = "shell_cloak"
+	smoketype = /datum/effect_system/smoke_spread/tactical
+
+/datum/ammo/rocket/recoilless/chemical/plasmaloss
+	name = "low velocity chemical shell"
+	hud_state = "shell_tanglefoot"
+	smoketype = /datum/effect_system/smoke_spread/plasmaloss
 
 /datum/ammo/rocket/recoilless/low_impact
 	name = "low impact explosive shell"
@@ -1726,7 +1756,7 @@ datum/ammo/bullet/revolver/tp44
 	sundering = 25
 
 /datum/ammo/rocket/recoilless/low_impact/drop_nade(turf/T)
-	explosion(T, 0, 1, 8, 3)
+	explosion(T, 0, 1, 8, 2)
 
 /datum/ammo/rocket/oneuse
 	name = "explosive rocket"
@@ -1749,7 +1779,7 @@ datum/ammo/bullet/revolver/tp44
 /datum/ammo/rocket/atgun_shell/drop_nade(turf/T)
 	explosion(T, 0, 2, 3, 2)
 
-/datum/ammo/rocket/atgun_shell/on_hit_turf(turf/T, obj/projectile/P)
+/datum/ammo/rocket/atgun_shell/on_hit_turf(turf/T, obj/projectile/P) //no explosion every time it hits a turf
 	P.proj_max_range -= 10
 
 /datum/ammo/rocket/atgun_shell/apcr
@@ -1787,7 +1817,8 @@ datum/ammo/bullet/revolver/tp44
 	explosion(T, 0, 3, 5, 0)
 
 /datum/ammo/rocket/atgun_shell/he/on_hit_turf(turf/T, obj/projectile/P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
+
 /*
 //================================================
 					Energy Ammo
@@ -2117,10 +2148,10 @@ datum/ammo/bullet/revolver/tp44
 	drop_nade(get_turf(O))
 
 /datum/ammo/energy/lasgun/marine/heavy_laser/on_hit_turf(turf/T, obj/projectile/P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
 
-/datum/ammo/energy/lasgun/marine/heavy_laser/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
+/datum/ammo/energy/lasgun/marine/heavy_laser/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 // Plasma //
 
@@ -2156,28 +2187,30 @@ datum/ammo/bullet/revolver/tp44
 	///Fire color
 	var/fire_color = "green"
 
-/datum/ammo/energy/plasma_pistol/on_hit_turf(turf/T, obj/projectile/proj)
+/datum/ammo/energy/plasma_pistol/proc/drop_fire(atom/target, obj/projectile/proj)
+	var/turf/target_turf = get_turf(target)
 	var/burn_mod = 1
-	if(istype(T, /turf/closed/wall))
+	if(istype(target_turf, /turf/closed/wall))
 		burn_mod = 3
-	T.ignite(heat, burn_damage * burn_mod, fire_color)
-	for(var/mob/living/mob_caught in T)
-		if(mob_caught.stat == DEAD)
+	target_turf.ignite(heat, burn_damage * burn_mod, fire_color)
+
+	for(var/mob/living/mob_caught in target_turf)
+		if(mob_caught.stat == DEAD || mob_caught == target)
 			continue
 		mob_caught.adjust_fire_stacks(burn_damage)
 		mob_caught.IgniteMob()
 
+/datum/ammo/energy/plasma_pistol/on_hit_turf(turf/T, obj/projectile/proj)
+	drop_fire(T, proj)
+
 /datum/ammo/energy/plasma_pistol/on_hit_mob(mob/M, obj/projectile/proj)
-	var/turf/T = get_turf(M)
-	if(!T)
-		T = get_turf(proj)
-	T.ignite(heat, burn_damage, fire_color)
+	drop_fire(M, proj)
 
 /datum/ammo/energy/plasma_pistol/on_hit_obj(obj/O, obj/projectile/proj)
-	var/turf/T = get_turf(O)
-	if(!T)
-		T = get_turf(proj)
-	T.ignite(heat, burn_damage, fire_color)
+	drop_fire(O, proj)
+
+/datum/ammo/energy/plasma_pistol/do_at_max_range(turf/T, obj/projectile/proj)
+	drop_fire(T, proj)
 
 //volkite
 
@@ -2306,27 +2339,15 @@ datum/ammo/bullet/revolver/tp44
 
 	return ..()
 
-/datum/ammo/xeno/toxin/on_hit_obj(obj/O,obj/projectile/P)
+/datum/ammo/xeno/toxin/on_hit_obj(obj/O, obj/projectile/P)
 	var/turf/T = get_turf(O)
-	if(!T)
-		T = get_turf(P)
+	drop_neuro_smoke(T.density ? P.loc : T)
 
-	if(O.density && !(O.flags_atom & ON_BORDER))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the object is dense and not a border object like barricades, we instead drop in the location just prior to the target
+/datum/ammo/xeno/toxin/on_hit_turf(turf/T, obj/projectile/P)
+	drop_neuro_smoke(T.density ? P.loc : T)
 
-	drop_neuro_smoke(T)
-
-/datum/ammo/xeno/toxin/on_hit_turf(turf/T,obj/projectile/P)
-	if(!T)
-		T = get_turf(P)
-
-	if(isclosedturf(T))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the turf is closed, we instead drop in the location just prior to the turf
-
-	drop_neuro_smoke(T)
-
-/datum/ammo/xeno/toxin/do_at_max_range(obj/projectile/P)
-	drop_neuro_smoke(get_turf(P))
+/datum/ammo/xeno/toxin/do_at_max_range(turf/T, obj/projectile/P)
+	drop_neuro_smoke(T.density ? P.loc : T)
 
 /datum/ammo/xeno/toxin/set_smoke()
 	smoke_system = new /datum/effect_system/smoke_spread/xeno/neuro/light()
@@ -2392,7 +2413,7 @@ datum/ammo/bullet/revolver/tp44
 	slowdown_stacks = 3
 
 
-/datum/ammo/xeno/sticky/on_hit_mob(mob/M,obj/projectile/P)
+/datum/ammo/xeno/sticky/on_hit_mob(mob/M, obj/projectile/P)
 	drop_resin(get_turf(M))
 	if(istype(M,/mob/living/carbon))
 		var/mob/living/carbon/C = M
@@ -2402,27 +2423,15 @@ datum/ammo/bullet/revolver/tp44
 		C.add_slowdown(slowdown_stacks) //slow em down
 
 
-/datum/ammo/xeno/sticky/on_hit_obj(obj/O,obj/projectile/P)
+/datum/ammo/xeno/sticky/on_hit_obj(obj/O, obj/projectile/P)
 	var/turf/T = get_turf(O)
-	if(!T)
-		T = get_turf(P)
+	drop_resin(T.density ? P.loc : T)
 
-	if(O.density && !(O.flags_atom & ON_BORDER))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the object is dense and not a border object like barricades, we instead drop in the location just prior to the target
+/datum/ammo/xeno/sticky/on_hit_turf(turf/T, obj/projectile/P)
+	drop_resin(T.density ? P.loc : T)
 
-	drop_resin(T)
-
-/datum/ammo/xeno/sticky/on_hit_turf(turf/T,obj/projectile/P)
-	if(!T)
-		T = get_turf(P)
-
-	if(isclosedturf(T))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the turf is closed, we instead drop in the location just prior to the turf
-
-	drop_resin(T)
-
-/datum/ammo/xeno/sticky/do_at_max_range(obj/projectile/P)
-	drop_resin(get_turf(P))
+/datum/ammo/xeno/sticky/do_at_max_range(turf/T, obj/projectile/P)
+	drop_resin(T.density ? P.loc : T)
 
 /datum/ammo/xeno/sticky/proc/drop_resin(turf/T)
 	if(T.density)
@@ -2489,33 +2498,17 @@ datum/ammo/bullet/revolver/tp44
 
 /datum/ammo/xeno/acid/heavy/on_hit_mob(mob/M,obj/projectile/P)
 	var/turf/T = get_turf(M)
-	if(!T)
-		T = get_turf(P)
-	drop_nade(T)
+	drop_nade(T.density ? P.loc : T)
 
 /datum/ammo/xeno/acid/heavy/on_hit_obj(obj/O,obj/projectile/P)
 	var/turf/T = get_turf(O)
-	if(!T)
-		T = get_turf(P)
-
-	if(O.density && !(O.flags_atom & ON_BORDER))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the object is dense and not a border object like barricades, we instead drop in the location just prior to the target
-
-	drop_nade(T)
-
+	drop_nade(T.density ? P.loc : T)
 
 /datum/ammo/xeno/acid/heavy/on_hit_turf(turf/T,obj/projectile/P)
-	if(!T)
-		T = get_turf(P)
+	drop_nade(T.density ? P.loc : T)
 
-	if(isclosedturf(T))
-		T = get_turf(get_step(T, turn(P.dir, 180))) //If the turf is closed, we instead drop in the location just prior to the turf
-
-	drop_nade(T)
-
-/datum/ammo/xeno/acid/heavy/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
-
+/datum/ammo/xeno/acid/heavy/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 /datum/ammo/xeno/acid/drop_nade(turf/T) //Leaves behind an acid pool; defaults to 1-3 seconds.
 	if(T.density)
@@ -2626,14 +2619,14 @@ datum/ammo/bullet/revolver/tp44
 	carbon_victim.reagents.add_reagent_list(spit_reagents) //transfer reagents
 
 /datum/ammo/xeno/boiler_gas/on_hit_obj(obj/O, obj/projectile/P)
-	drop_nade(get_turf(P), P.firer)
+	var/turf/T = get_turf(O)
+	drop_nade(T.density ? P.loc : T, P.firer)
 
 /datum/ammo/xeno/boiler_gas/on_hit_turf(turf/T, obj/projectile/P)
-	var/target = (T.density && isturf(P.loc)) ? P.loc : T
-	drop_nade(target, P.firer) //we don't want the gas globs to land on dense turfs, they block smoke expansion.
+	drop_nade(T.density ? P.loc : T, P.firer) //we don't want the gas globs to land on dense turfs, they block smoke expansion.
 
-/datum/ammo/xeno/boiler_gas/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P), P.firer)
+/datum/ammo/xeno/boiler_gas/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T, P.firer)
 
 /datum/ammo/xeno/boiler_gas/set_smoke()
 	smoke_system = new /datum/effect_system/smoke_spread/xeno/neuro()
@@ -2745,12 +2738,11 @@ datum/ammo/bullet/revolver/tp44
 	hugger.go_idle()
 
 /datum/ammo/xeno/hugger/on_hit_turf(turf/T, obj/projectile/P)
-	var/target = (T.density && isturf(P.loc)) ? P.loc : T
-	var/obj/item/clothing/mask/facehugger/hugger = new hugger_type(target)
+	var/obj/item/clothing/mask/facehugger/hugger = new hugger_type(T.density ? P.loc : T)
 	hugger.go_idle()
 
-/datum/ammo/xeno/hugger/do_at_max_range(obj/projectile/P)
-	var/obj/item/clothing/mask/facehugger/hugger = new hugger_type(get_turf(P))
+/datum/ammo/xeno/hugger/do_at_max_range(turf/T, obj/projectile/P)
+	var/obj/item/clothing/mask/facehugger/hugger = new hugger_type(T.density ? P.loc : T)
 	hugger.go_idle()
 
 /datum/ammo/xeno/hugger/slash
@@ -2805,7 +2797,7 @@ datum/ammo/bullet/revolver/tp44
 	sound_hit 	 	= "alloy_hit"
 	sound_armor	 	= "alloy_armor"
 	sound_bounce	= "alloy_bounce"
-	armor_type = "bullet"
+	armor_type = BULLET
 	accuracy = 20
 	accurate_range = 15
 	max_range = 15
@@ -2835,17 +2827,17 @@ datum/ammo/bullet/revolver/tp44
 		return
 	T.ignite(burntime, burnlevel, fire_color)
 
-/datum/ammo/flamethrower/on_hit_mob(mob/M,obj/projectile/P)
+/datum/ammo/flamethrower/on_hit_mob(mob/M, obj/projectile/P)
 	drop_flame(get_turf(M))
 
-/datum/ammo/flamethrower/on_hit_obj(obj/O,obj/projectile/P)
+/datum/ammo/flamethrower/on_hit_obj(obj/O, obj/projectile/P)
 	drop_flame(get_turf(O))
 
-/datum/ammo/flamethrower/on_hit_turf(turf/T,obj/projectile/P)
+/datum/ammo/flamethrower/on_hit_turf(turf/T, obj/projectile/P)
 	drop_flame(get_turf(T))
 
-/datum/ammo/flamethrower/do_at_max_range(obj/projectile/P)
-	drop_flame(get_turf(P))
+/datum/ammo/flamethrower/do_at_max_range(turf/T, obj/projectile/P)
+	drop_flame(get_turf(T))
 
 /datum/ammo/flamethrower/tank_flamer/drop_flame(turf/T)
 	if(!istype(T))
@@ -2879,7 +2871,7 @@ datum/ammo/bullet/revolver/tp44
 /datum/ammo/rocket/toy/on_hit_turf(turf/T,obj/projectile/P)
 	return
 
-/datum/ammo/rocket/toy/do_at_max_range(obj/projectile/P)
+/datum/ammo/rocket/toy/do_at_max_range(turf/T, obj/projectile/P)
 	return
 
 /datum/ammo/grenade_container
@@ -2900,10 +2892,10 @@ datum/ammo/bullet/revolver/tp44
 	drop_nade(get_turf(P))
 
 /datum/ammo/grenade_container/on_hit_turf(turf/T,obj/projectile/P)
-	drop_nade(get_turf(P))
+	drop_nade(T.density ? P.loc : T)
 
-/datum/ammo/grenade_container/do_at_max_range(obj/projectile/P)
-	drop_nade(get_turf(P))
+/datum/ammo/grenade_container/do_at_max_range(turf/T, obj/projectile/P)
+	drop_nade(T.density ? P.loc : T)
 
 /datum/ammo/grenade_container/drop_nade(turf/T)
 	var/obj/item/explosive/grenade/G = new nade_type(T)

@@ -69,6 +69,7 @@
 	aim_slowdown = 0.15
 	burst_amount = 5
 	movement_acc_penalty_mult = 2
+	akimbo_additional_delay = 0.5
 	upper_akimbo_accuracy = 5
 	lower_akimbo_accuracy = 3
 
@@ -89,8 +90,14 @@
 	desc = "The SMG-90 is the TerraGov Marine Corps standard issue SMG. Its known for it's compact size and ease of use inside the field. It's usually carried by troops who want a lightweight firearm to rush with. It uses 10x20mm caseless rounds."
 	icon = 'icons/Marine/gun64.dmi'
 	fire_sound = 'sound/weapons/guns/fire/t90.ogg'
-	icon_state = "t90"
+	icon_state = GUN_ICONSTATE_LOADED
 	item_state = "t90"
+	item_icons = list(
+		slot_l_hand_str = /datum/greyscale_config/gun/worn/l_hand/t90,
+		slot_r_hand_str = /datum/greyscale_config/gun/worn/r_hand/t90,
+		slot_back_str = /datum/greyscale_config/gun/worn/t90,
+		slot_s_store_str = /datum/greyscale_config/gun/worn/suit/t90,
+	)
 	caliber = CALIBER_10X20_CASELESS //codex
 	max_shells = 50 //codex
 	flags_equip_slot = ITEM_SLOT_BACK
@@ -116,7 +123,7 @@
 
 	flags_gun_features = GUN_CAN_POINTBLANK|GUN_AMMO_COUNTER
 	gun_firemode_list = list(GUN_FIREMODE_SEMIAUTO, GUN_FIREMODE_AUTOMATIC)
-	attachable_offset = list("muzzle_x" = 37, "muzzle_y" = 16,"rail_x" = 24, "rail_y" = 22, "under_x" = 30, "under_y" = 9, "stock_x" = 24, "stock_y" = 10)
+	attachable_offset = list("muzzle_x" = 31, "muzzle_y" = 15,"rail_x" = 22, "rail_y" = 22, "under_x" = 26, "under_y" = 12, "stock_x" = 24, "stock_y" = 10)
 	actions_types = list(/datum/action/item_action/aim_mode)
 	aim_fire_delay = 0.1 SECONDS
 	aim_speed_modifier = 0.55
@@ -131,7 +138,7 @@
 	lower_akimbo_accuracy = 2
 
 	placed_overlay_iconstate = "t90"
-
+	greyscale_config = /datum/greyscale_config/gun/t90
 /obj/item/weapon/gun/smg/standard_smg/breacher
 	starting_attachment_types = list(/obj/item/attachable/magnetic_harness)
 
@@ -419,7 +426,7 @@
 	aim_slowdown = 0.15
 	wield_delay = 0.4 SECONDS
 
-	accuracy_mult = 1.2
+	accuracy_mult = 1.05
 	accuracy_mult_unwielded = 0.9
 
 	recoil = 0
@@ -433,7 +440,7 @@
 	extra_delay = 0.1 SECONDS
 	autoburst_delay = 0.1 SECONDS //this makes it fuller auto
 	burst_accuracy_mult = 0.7
-	burst_scatter_mult = 9
+	burst_scatter_mult = 15
 
 	akimbo_additional_delay = 0.7
 	upper_akimbo_accuracy = 5
@@ -444,6 +451,21 @@
 		/obj/item/attachable/verticalgrip,
 		/obj/item/attachable/compensator,
 		/obj/item/attachable/motiondetector,
+	)
+
+/obj/item/weapon/gun/smg/som/one_handed
+	starting_attachment_types = list(
+		/obj/item/attachable/lasersight,
+		/obj/item/attachable/compensator,
+		/obj/item/attachable/magnetic_harness,
+	)
+
+/obj/item/weapon/gun/smg/som/veteran
+	default_ammo_type = /obj/item/ammo_magazine/smg/som/ap
+	starting_attachment_types = list(
+		/obj/item/attachable/verticalgrip,
+		/obj/item/attachable/compensator,
+		/obj/item/attachable/reddot,
 	)
 
 /obj/item/weapon/gun/smg/som/support

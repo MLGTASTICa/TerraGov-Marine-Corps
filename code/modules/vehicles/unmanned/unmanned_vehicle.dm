@@ -13,7 +13,7 @@
 	max_integrity = 150
 	hud_possible = list(MACHINE_HEALTH_HUD, MACHINE_AMMO_HUD)
 	flags_atom = BUMP_ATTACKABLE
-	soft_armor = list("melee" = 25, "bullet" = 85, "laser" = 50, "energy" = 100, "bomb" = 50, "bio" = 100, "rad" = 100, "fire" = 25, "acid" = 25)
+	soft_armor = list(MELEE = 25, BULLET = 85, LASER = 50, ENERGY = 100, BOMB = 50, BIO = 100, "rad" = 100, FIRE = 25, ACID = 25)
 	/// Path of "turret" attached
 	var/obj/item/uav_turret/turret_path
 	/// Type of the turret attached
@@ -99,8 +99,17 @@
 
 /obj/vehicle/unmanned/examine(mob/user, distance, infix, suffix)
 	. = ..()
-	if(ishuman(user))
-		. += "It has [current_rounds] ammo left."
+	if(current_rounds > 0)
+		. += "It has [current_rounds] shots left."
+	switch(turret_type)
+		if(TURRET_TYPE_LIGHT)
+			. += "It is equipped with a light weapon system. It uses 11x35mm ammo."
+		if(TURRET_TYPE_HEAVY)
+			. += "It is equipped with a heavy weapon system. It uses 12x40mm ammo."
+		if(TURRET_TYPE_EXPLOSIVE)
+			. += "It is equipped with an explosive weapon system. "
+		if(TURRET_TYPE_DROIDLASER)
+			. += "It is equipped with a droid weapon system. It uses 11x35mm ammo."
 
 /obj/vehicle/unmanned/attackby(obj/item/I, mob/user, params)
 	. = ..()
@@ -148,17 +157,27 @@
 	return
 
 ///Try to reload the turret of our vehicule
-/obj/vehicle/unmanned/proc/reload_turret(obj/item/ammo_magazine/ammo, mob/user)
-	if(!ispath(ammo.type, initial(turret_path.magazine_type)))
+/obj/vehicle/unmanned/proc/reload_turret(obj/item/ammo_magazine/reload_ammo, mob/user)
+	if(!ispath(reload_ammo.type, initial(turret_path.magazine_type)))
 		to_chat(user, span_warning("This is not the right ammo!"))
 		return
-	user.visible_message(span_notice("[user] starts to reload [src] with [ammo]."), span_notice("You start to reload [src] with [ammo]."))
+	if(max_rounds == current_rounds)
+		to_chat(user, span_warning("The [src] ammo storage is already full!"))
+		return
+	user.visible_message(span_notice("[user] starts to reload [src] with [reload_ammo]."), span_notice("You start to reload [src] with [reload_ammo]."))
 	if(!do_after(user, 3 SECONDS, TRUE, src))
 		return
-	user.visible_message(span_notice("[user] reloads [src] with [ammo]."), span_notice("You reload [src] with [ammo]."))
-	current_rounds = min(current_rounds + ammo.current_rounds, max_rounds)
+	current_rounds = current_rounds + reload_ammo.current_rounds
+	if(current_rounds > max_rounds)
+		var/extra_rounds = current_rounds - max_rounds
+		reload_ammo.current_rounds = extra_rounds
+		current_rounds = max_rounds
+	user.visible_message(span_notice("[user] reloads [src] with [reload_ammo]."), span_notice("You reload [src] with [reload_ammo]. It now has [current_rounds] shots left out of a maximum of [max_rounds]."))
 	playsound(loc, 'sound/weapons/guns/interact/smartgun_unload.ogg', 25, 1)
-	qdel(ammo)
+	if(reload_ammo.current_rounds < 1)
+		qdel(reload_ammo)
+	update_icon()
+	hud_set_uav_ammo()
 
 /// Try to equip a turret on the vehicle
 /obj/vehicle/unmanned/proc/equip_turret(obj/item/I, mob/user)
@@ -266,6 +285,7 @@
 		span_xenodanger("We smash [src] with a devastating punch!"), visible_message_flags = COMBAT_MESSAGE)
 	playsound(src, pick('sound/effects/bang.ogg','sound/effects/metal_crash.ogg','sound/effects/meteorimpact.ogg'), 50, 1)
 	Shake(4, 4, 2 SECONDS)
+	return TRUE
 
 /obj/vehicle/unmanned/flamer_fire_act(burnlevel)
 	take_damage(burnlevel / 2, BURN, "fire")

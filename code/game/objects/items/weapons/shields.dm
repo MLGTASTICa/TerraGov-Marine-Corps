@@ -6,7 +6,7 @@
 	set_shield()
 
 /obj/item/weapon/shield/proc/set_shield()
-	AddComponent(/datum/component/shield, SHIELD_PARENT_INTEGRITY)
+	AddComponent(/datum/component/shield, SHIELD_PARENT_INTEGRITY, shield_cover = list(MELEE = 80, BULLET = 60, LASER = 60, ENERGY = 60, BOMB = 80, BIO = 30, FIRE = 70, ACID = 80))
 
 /obj/item/weapon/shield/riot
 	name = "riot shield"
@@ -23,8 +23,8 @@
 	w_class = WEIGHT_CLASS_BULKY
 	materials = list(/datum/material/metal = 1000)
 	attack_verb = list("shoved", "bashed")
-	soft_armor = list("melee" = 40, "bullet" = 20, "laser" = 0, "energy" = 70, "bomb" = 0, "bio" = 100, "rad" = 70, "fire" = 0, "acid" = 0)
-	hard_armor = list("melee" = 5, "bullet" = 5, "laser" = 0, "energy" = 0, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 0, "acid" = 0)
+	soft_armor = list(MELEE = 40, BULLET = 20, LASER = 0, ENERGY = 70, BOMB = 0, BIO = 100, "rad" = 70, FIRE = 0, ACID = 0)
+	hard_armor = list(MELEE = 5, BULLET = 5, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, "rad" = 0, FIRE = 0, ACID = 0)
 	hit_sound = 'sound/effects/grillehit.ogg'
 	destroy_sound = 'sound/effects/glassbr3.ogg'
 	var/cooldown = 0 //shield bash cooldown. based on world.time
@@ -124,7 +124,7 @@
 	return TRUE
 
 /obj/item/weapon/shield/riot/attackby(obj/item/I, mob/user)
-	if(istype(I, /obj/item/weapon/baton) && world.time >= cooldown)
+	if(istype(I, /obj/item/weapon) && world.time >= cooldown)
 		user.visible_message(span_warning("[user] bashes [src] with [I]!"))
 		playsound(user.loc, 'sound/effects/shieldbash.ogg', 25, 1)
 		cooldown = world.time + 2.5 SECONDS
@@ -139,8 +139,8 @@
 	flags_equip_slot = ITEM_SLOT_BACK
 	max_integrity = 400
 	integrity_failure = 100
-	soft_armor = list("melee" = 50, "bullet" = 50, "laser" = 20, "energy" = 70, "bomb" = 15, "bio" = 50, "rad" = 0, "fire" = 0, "acid" = 35)
-	hard_armor = list("melee" = 0, "bullet" = 5, "laser" = 0, "energy" = 0, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 0, "acid" = 0)
+	soft_armor = list(MELEE = 50, BULLET = 50, LASER = 20, ENERGY = 70, BOMB = 15, BIO = 50, "rad" = 0, FIRE = 0, ACID = 35)
+	hard_armor = list(MELEE = 0, BULLET = 5, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, "rad" = 0, FIRE = 0, ACID = 0)
 	force = 20
 	slowdown = 0.5
 
@@ -175,6 +175,13 @@
 		to_chat(user, span_warning("You tighten the strap of [src] around your hand!"))
 	else
 		to_chat(user, span_notice("You loosen the strap of [src] around your hand!"))
+
+/obj/item/weapon/shield/riot/marine/som
+	name = "\improper S-144 boarding shield"
+	desc = "A robust, heavy shield designed to be shot instead of the person holding it. Commonly employed by the SOM during boarding actions and other close quarter combat scenarios. This one has a SOM flag emblazoned on the front. Alt click to tighten the strap."
+	icon = 'icons/obj/items/weapons.dmi'
+	icon_state = "som_shield"
+	soft_armor = list(MELEE = 35, BULLET = 50, LASER = 50, ENERGY = 50, BOMB = 30, BIO = 50, FIRE = 0, ACID = 15)
 
 /obj/item/weapon/shield/energy
 	name = "energy combat shield"
