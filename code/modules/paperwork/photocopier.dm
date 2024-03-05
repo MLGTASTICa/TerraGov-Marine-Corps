@@ -78,7 +78,7 @@
 				c.copy_overlays(copy, TRUE)
 				toner--
 				busy = TRUE
-				sleep(15)
+				sleep(1.5 SECONDS)
 				busy = FALSE
 
 		if(photocopy)
@@ -88,7 +88,7 @@
 
 				new /obj/item/photo (loc, photocopy.picture.Copy(greytoggle == "Greyscale"? TRUE : FALSE))
 				busy = TRUE
-				sleep(15)
+				sleep(1.5 SECONDS)
 				busy = FALSE
 
 	else if(href_list["remove"])
@@ -134,6 +134,8 @@
 
 /obj/machinery/photocopier/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(istype(I, /obj/item/paper))
 		if(!copier_empty())

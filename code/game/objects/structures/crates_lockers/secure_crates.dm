@@ -10,23 +10,24 @@
 	var/sparks = "securecratesparks"
 	locked = TRUE
 	max_integrity = 500
-	soft_armor = list("melee" = 30, "bullet" = 50, "laser" = 50, "energy" = 100, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 80, "acid" = 80)
+	soft_armor = list(MELEE = 30, BULLET = 50, LASER = 50, ENERGY = 100, BOMB = 0, BIO = 0, FIRE = 80, ACID = 80)
 
 
 /obj/structure/closet/crate/secure/Initialize(mapload, ...)
 	. = ..()
 	update_icon()
 
-
-/obj/structure/closet/crate/secure/update_icon()
-	overlays.Cut()
+/obj/structure/closet/crate/secure/update_icon_state()
+	. = ..()
 	if(opened)
 		icon_state = icon_opened
 	else
 		icon_state = locked ? icon_locked : icon_unlocked
-	if(welded)
-		overlays += overlay_welded
 
+/obj/structure/closet/crate/secure/update_overlays()
+	. = ..()
+	if(welded)
+		. += overlay_welded
 
 /obj/structure/closet/crate/secure/can_open()
 	return !locked

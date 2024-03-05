@@ -39,7 +39,7 @@
 	else
 		state = 5
 	update_icon()
-	sleep(200)
+	sleep(20 SECONDS)
 	for(var/atom/A in contents)
 		A.clean_blood()
 
@@ -62,17 +62,20 @@
 	set category = "Object"
 	set src in usr.loc
 
-	sleep(20)
+	sleep(2 SECONDS)
 	if(state in list(1,3,6) )
 		usr.loc = src.loc
 
 
-/obj/machinery/washing_machine/update_icon()
+/obj/machinery/washing_machine/update_icon_state()
+	. = ..()
 	icon_state = "wm_[state][panel]"
 
 
 /obj/machinery/washing_machine/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(istype(I, /obj/item/toy/crayon) || istype(I, /obj/item/tool/stamp))
 		if(!(state in list(1, 3, 6)))

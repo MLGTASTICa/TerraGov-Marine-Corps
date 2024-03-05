@@ -1,4 +1,4 @@
-obj/structure/door_assembly
+/obj/structure/door_assembly
 	icon = 'icons/obj/doors/door_assembly.dmi'
 
 	name = "airlock assembly"
@@ -6,10 +6,10 @@ obj/structure/door_assembly
 	anchored = FALSE
 	density = TRUE
 	resistance_flags = XENO_DAMAGEABLE
-	throwpass = FALSE
+	allow_pass_flags = PASS_AIR
 	max_integrity = 50
 	var/state = 0
-	var/base_icon_state = ""
+	base_icon_state = ""
 	var/base_name = "Airlock"
 	var/obj/item/circuitboard/airlock/electronics = null
 	var/airlock_type = "" //the type path of the airlock once completed
@@ -17,133 +17,127 @@ obj/structure/door_assembly
 	var/glass = 0 // 0 = glass can be installed. -1 = glass can't be installed. 1 = glass is already installed. Text = mineral plating is installed instead.
 	var/created_name = null
 
-	New()
+/obj/structure/door_assembly/Initialize(mapload)
+	. = ..()
+	update_state()
 
-		..()
+/obj/structure/door_assembly/door_assembly_com
+	base_icon_state = "com"
+	base_name = "Command Airlock"
+	glass_type = "/glass_command"
+	airlock_type = "/command"
 
-		update_state()
+/obj/structure/door_assembly/door_assembly_sec
+	base_icon_state = "sec"
+	base_name = "Security Airlock"
+	glass_type = "/glass_security"
+	airlock_type = "/security"
 
-	door_assembly_com
-		base_icon_state = "com"
-		base_name = "Command Airlock"
-		glass_type = "/glass_command"
-		airlock_type = "/command"
+/obj/structure/door_assembly/door_assembly_eng
+	base_icon_state = "eng"
+	base_name = "Engineering Airlock"
+	glass_type = "/glass_engineering"
+	airlock_type = "/engineering"
 
-	door_assembly_sec
-		base_icon_state = "sec"
-		base_name = "Security Airlock"
-		glass_type = "/glass_security"
-		airlock_type = "/security"
+/obj/structure/door_assembly/door_assembly_min
+	base_icon_state = "min"
+	base_name = "Mining Airlock"
+	glass_type = "/glass_mining"
+	airlock_type = "/mining"
 
-	door_assembly_eng
-		base_icon_state = "eng"
-		base_name = "Engineering Airlock"
-		glass_type = "/glass_engineering"
-		airlock_type = "/engineering"
+/obj/structure/door_assembly/door_assembly_atmo
+	base_icon_state = "atmo"
+	base_name = "Atmospherics Airlock"
+	glass_type = "/glass_atmos"
+	airlock_type = "/atmos"
 
-	door_assembly_min
-		base_icon_state = "min"
-		base_name = "Mining Airlock"
-		glass_type = "/glass_mining"
-		airlock_type = "/mining"
+/obj/structure/door_assembly/door_assembly_research
+	base_icon_state = "res"
+	base_name = "Research Airlock"
+	glass_type = "/glass_research"
+	airlock_type = "/research"
 
-	door_assembly_atmo
-		base_icon_state = "atmo"
-		base_name = "Atmospherics Airlock"
-		glass_type = "/glass_atmos"
-		airlock_type = "/atmos"
+/obj/structure/door_assembly/door_assembly_science
+	base_icon_state = "sci"
+	base_name = "Science Airlock"
+	glass_type = "/glass_science"
+	airlock_type = "/science"
 
-	door_assembly_research
-		base_icon_state = "res"
-		base_name = "Research Airlock"
-		glass_type = "/glass_research"
-		airlock_type = "/research"
+/obj/structure/door_assembly/door_assembly_med
+	base_icon_state = "med"
+	base_name = "Medical Airlock"
+	glass_type = "/glass_medical"
+	airlock_type = "/medical"
 
-	door_assembly_science
-		base_icon_state = "sci"
-		base_name = "Science Airlock"
-		glass_type = "/glass_science"
-		airlock_type = "/science"
+/obj/structure/door_assembly/door_assembly_mai
+	base_icon_state = "mai"
+	base_name = "Maintenance Airlock"
+	airlock_type = "/maintenance"
+	glass = -1
 
-	door_assembly_med
-		base_icon_state = "med"
-		base_name = "Medical Airlock"
-		glass_type = "/glass_medical"
-		airlock_type = "/medical"
+/obj/structure/door_assembly/door_assembly_ext
+	base_icon_state = "ext"
+	base_name = "External Airlock"
+	airlock_type = "/external"
+	glass = -1
 
-	door_assembly_mai
-		base_icon_state = "mai"
-		base_name = "Maintenance Airlock"
-		airlock_type = "/maintenance"
-		glass = -1
+/obj/structure/door_assembly/door_assembly_fre
+	base_icon_state = "fre"
+	base_name = "Freezer Airlock"
+	airlock_type = "/freezer"
+	glass = -1
 
-	door_assembly_ext
-		base_icon_state = "ext"
-		base_name = "External Airlock"
-		airlock_type = "/external"
-		glass = -1
+/obj/structure/door_assembly/door_assembly_hatch
+	base_icon_state = "hatch"
+	base_name = "Airtight Hatch"
+	airlock_type = "/hatch"
+	glass = -1
 
-	door_assembly_fre
-		base_icon_state = "fre"
-		base_name = "Freezer Airlock"
-		airlock_type = "/freezer"
-		glass = -1
+/obj/structure/door_assembly/door_assembly_mhatch
+	base_icon_state = "mhatch"
+	base_name = "Maintenance Hatch"
+	airlock_type = "/maintenance_hatch"
+	glass = -1
 
-	door_assembly_hatch
-		base_icon_state = "hatch"
-		base_name = "Airtight Hatch"
-		airlock_type = "/hatch"
-		glass = -1
+/obj/structure/door_assembly/door_assembly_highsecurity // Borrowing this until WJohnston makes sprites for the assembly
+	base_icon_state = "highsec"
+	base_name = "High Security Airlock"
+	airlock_type = "/highsecurity"
+	glass = -1
 
-	door_assembly_mhatch
-		base_icon_state = "mhatch"
-		base_name = "Maintenance Hatch"
-		airlock_type = "/maintenance_hatch"
-		glass = -1
+/obj/structure/door_assembly/multi_tile
+	icon = 'icons/obj/doors/door_assembly2x1.dmi'
+	dir = EAST
+	base_icon_state = "g" //Remember to delete this line when reverting "glass" var to 1.
+	airlock_type = "/multi_tile/glass"
+	glass = -1 //To prevent bugs in deconstruction process.
+	var/width = 1
 
-	door_assembly_highsecurity // Borrowing this until WJohnston makes sprites for the assembly
-		base_icon_state = "highsec"
-		base_name = "High Security Airlock"
-		airlock_type = "/highsecurity"
-		glass = -1
+/obj/structure/door_assembly/multi_tile/Initialize(mapload)
+	. = ..()
+	if(dir in list(EAST, WEST))
+		bound_width = width * world.icon_size
+		bound_height = world.icon_size
+	else
+		bound_width = world.icon_size
+		bound_height = width * world.icon_size
+	update_state()
 
-	multi_tile
-		icon = 'icons/obj/doors/door_assembly2x1.dmi'
-		dir = EAST
-		var/width = 1
-
-/*Temporary until we get sprites.
-		glass_type = "/multi_tile/glass"
-		airlock_type = "/multi_tile/maint"
-		glass = 1*/
-		base_icon_state = "g" //Remember to delete this line when reverting "glass" var to 1.
-		airlock_type = "/multi_tile/glass"
-		glass = -1 //To prevent bugs in deconstruction process.
-
-		New()
-			..()
-			if(dir in list(EAST, WEST))
-				bound_width = width * world.icon_size
-				bound_height = world.icon_size
-			else
-				bound_width = world.icon_size
-				bound_height = width * world.icon_size
-			update_state()
-
-		Move()
-			. = ..()
-			if(dir in list(EAST, WEST))
-				bound_width = width * world.icon_size
-				bound_height = world.icon_size
-			else
-				bound_width = world.icon_size
-				bound_height = width * world.icon_size
+/obj/structure/door_assembly/multi_tile/Move()
+	. = ..()
+	if(dir in list(EAST, WEST))
+		bound_width = width * world.icon_size
+		bound_height = world.icon_size
+	else
+		bound_width = world.icon_size
+		bound_height = width * world.icon_size
 
 
 
 /obj/structure/door_assembly/attackby(obj/item/I, mob/user, params)
 	. = ..()
-
+	if(.)
+		return
 	if(istype(I, /obj/item/tool/pen))
 		var/t = copytext(stripped_input(user, "Enter the name for the door.", name, created_name), 1, MAX_NAME_LEN)
 		if(!t)
@@ -161,7 +155,7 @@ obj/structure/door_assembly
 		playsound(loc, 'sound/items/welder2.ogg', 25, 1)
 		if(istext(glass))
 			user.visible_message("[user] welds the [glass] plating off the airlock assembly.", "You start to weld the [glass] plating off the airlock assembly.")
-			if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+			if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 				return
 
 			if(!WT.isOn())
@@ -173,7 +167,7 @@ obj/structure/door_assembly
 
 		else if(glass == 1)
 			user.visible_message("[user] welds the glass panel out of the airlock assembly.", "You start to weld the glass panel out of the airlock assembly.")
-			if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+			if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 				return
 
 			if(!WT.isOn())
@@ -184,7 +178,7 @@ obj/structure/door_assembly
 
 		else if(!anchored)
 			user.visible_message("[user] dissassembles the airlock assembly.", "You start to dissassemble the airlock assembly.")
-			if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+			if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 				return
 
 			if(!WT.isOn())
@@ -201,7 +195,7 @@ obj/structure/door_assembly
 		else
 			user.visible_message("[user] secures the airlock assembly to the floor.", "You start to secure the airlock assembly to the floor.")
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 			return
 
 		to_chat(user, span_notice("You [anchored ? "un" : ""]secured the airlock assembly!"))
@@ -215,7 +209,7 @@ obj/structure/door_assembly
 
 		user.visible_message("[user] wires the airlock assembly.", "You start to wire the airlock assembly.")
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD) || state != 0 || !anchored)
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD) || state != 0 || !anchored)
 			return
 
 		if(!C.use(1))
@@ -228,7 +222,7 @@ obj/structure/door_assembly
 		playsound(loc, 'sound/items/wirecutter.ogg', 25, 1)
 		user.visible_message("[user] cuts the wires from the airlock assembly.", "You start to cut the wires from airlock assembly.")
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 			return
 
 		to_chat(user, span_notice("You cut the airlock wires.!"))
@@ -239,7 +233,7 @@ obj/structure/door_assembly
 		playsound(loc, 'sound/items/screwdriver.ogg', 25, 1)
 		user.visible_message("[user] installs the electronics into the airlock assembly.", "You start to install electronics into the airlock assembly.")
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 			return
 
 		user.drop_held_item()
@@ -253,7 +247,7 @@ obj/structure/door_assembly
 		playsound(loc, 'sound/items/crowbar.ogg', 25, 1)
 		user.visible_message("[user] removes the electronics from the airlock assembly.", "You start to remove the electronics from the airlock assembly.")
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 			return
 
 		to_chat(user, span_notice("You removed the airlock electronics!"))
@@ -276,7 +270,7 @@ obj/structure/door_assembly
 		if(istype(S, /obj/item/stack/sheet/glass/reinforced))
 			playsound(loc, 'sound/items/crowbar.ogg', 25, 1)
 			user.visible_message("[user] adds [S.name] to the airlock assembly.", "You start to install [S.name] into the airlock assembly.")
-			if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD) && !glass)
+			if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD) && !glass)
 				return
 
 			if(!S.use(1))
@@ -292,7 +286,7 @@ obj/structure/door_assembly
 
 			playsound(loc, 'sound/items/crowbar.ogg', 25, 1)
 			user.visible_message("[user] adds [S.name] to the airlock assembly.", "You start to install [S.name] into the airlock assembly.")
-			if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD) && !glass)
+			if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD) && !glass)
 				return
 
 			if(!S.use(2))
@@ -305,7 +299,7 @@ obj/structure/door_assembly
 		playsound(loc, 'sound/items/screwdriver.ogg', 25, 1)
 		to_chat(user, span_notice("Now finishing the airlock."))
 
-		if(!do_after(user, 40, TRUE, src, BUSY_ICON_BUILD))
+		if(!do_after(user, 40, NONE, src, BUSY_ICON_BUILD))
 			return
 
 		to_chat(user, span_notice("You finish the airlock!"))

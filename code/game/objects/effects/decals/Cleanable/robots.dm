@@ -6,9 +6,6 @@
 	basecolor="#030303"
 	random_icon_states = list("gib1", "gib2", "gib3", "gib4", "gib5", "gib6", "gib7")
 
-/obj/effect/decal/cleanable/blood/gibs/robot/update_icon()
-	color = "#FFFFFF"
-
 /obj/effect/decal/cleanable/blood/gibs/robot/dry()	//pieces of robots do not dry up like
 	return
 
@@ -16,7 +13,7 @@
 	spawn (0)
 		var/direction = pick(directions)
 		for (var/i = 0, i < pick(1, 200; 2, 150; 3, 50; 4), i++)
-			sleep(3)
+			sleep(0.3 SECONDS)
 			if (i > 0)
 				if (prob(40))
 					var/obj/effect/decal/cleanable/blood/oil/streak = new(src.loc)

@@ -5,10 +5,14 @@
 	name = "drink"
 	desc = "yummy"
 	icon = 'icons/obj/items/drinks.dmi'
+	item_icons = list(
+		slot_l_hand_str = 'icons/mob/inhands/items/drinks_left.dmi',
+		slot_r_hand_str = 'icons/mob/inhands/items/drinks_right.dmi',
+	)
 	icon_state = null
 	init_reagent_flags = OPENCONTAINER_NOUNIT
 	var/gulp_size = 5 //This is now officially broken ... need to think of a nice way to fix it.
-	possible_transfer_amounts = list(5,10,25)
+	possible_transfer_amounts = list(5,10,15,20,30,60)
 	volume = 50
 
 /obj/item/reagent_containers/food/drinks/on_reagent_change()
@@ -29,6 +33,7 @@
 				to_chat(M, span_warning("You have a monitor for a head, where do you think you're going to put that?"))
 				return
 			to_chat(M,span_notice("You swallow a gulp from \the [src]."))
+			record_reagent_consumption(min(gulp_size, reagents.total_volume), reagents.reagent_list, user)
 			if(reagents.total_volume)
 				reagents.reaction(M, INGEST)
 				reagents.trans_to(M, gulp_size)
@@ -40,13 +45,14 @@
 				to_chat(user, span_warning("They have a monitor for a head, where do you think you're going to put that?"))
 				return
 			M.visible_message(span_warning("[user] attempts to feed [M] \the [src]."))
-			if(!do_mob(user, M, 30, BUSY_ICON_FRIENDLY))
+			if(!do_after(user, 3 SECONDS, NONE, M, BUSY_ICON_FRIENDLY))
 				return
 			M.visible_message(span_warning("[user] feeds [M] \the [src]."))
 
 			var/rgt_list_text = get_reagent_list_text()
 
 			log_combat(user, M, "fed", src, "Reagents: [rgt_list_text]")
+			record_reagent_consumption(min(gulp_size, reagents.total_volume), reagents.reagent_list, user, M)
 
 			if(reagents.total_volume)
 				reagents.reaction(M, INGEST)
@@ -125,17 +131,6 @@
 	item_state = "carton"
 	center_of_mass = list("x"=16, "y"=9)
 	list_reagents = list(/datum/reagent/consumable/drink/milk = 50)
-
-/* Flour is no longer a reagent
-/obj/item/reagent_containers/food/drinks/flour
-	name = "flour sack"
-	desc = "A big bag of flour. Good for baking!"
-	icon = 'icons/obj/items/food.dmi'
-	icon_state = "flour"
-	item_state = "flour"
-	center_of_mass = list(x=-10, y=-10)
-	list_reagents = list(/datum/reagent/consumable/flour = 30)
-*/
 
 /obj/item/reagent_containers/food/drinks/soymilk
 	name = "soy milk"

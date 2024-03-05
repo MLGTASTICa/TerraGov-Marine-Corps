@@ -23,7 +23,7 @@
 	new /obj/item/clothing/head/helmet/swat(src)
 	new /obj/item/clothing/shoes/brown(src)
 	new /obj/item/clothing/gloves/captain(src)
-	new /obj/item/clothing/suit/armor/captain(src)
+	new /obj/item/clothing/suit/space/captain(src)
 	new /obj/item/weapon/telebaton(src)
 	new /obj/item/clothing/under/dress/dress_cap(src)
 	new /obj/item/clothing/head/helmet/formalcaptain(src)
@@ -189,7 +189,6 @@
 	new /obj/item/storage/belt/security(src)
 	new /obj/item/flash(src)
 	new /obj/item/reagent_containers/spray/pepper(src)
-	new /obj/item/explosive/grenade/flashbang(src)
 	new /obj/item/weapon/baton(src)
 	new /obj/item/weapon/gun/energy/taser(src)
 	new /obj/item/clothing/glasses/sunglasses/sechud(src)
@@ -272,7 +271,8 @@
 	new /obj/item/armor_module/storage/uniform/holster/armpit(src)
 
 
-/obj/structure/closet/secure_closet/detective/update_icon()
+/obj/structure/closet/secure_closet/detective/update_icon_state()
+	. = ..()
 	if(broken)
 		icon_state = icon_broken
 	else
@@ -357,7 +357,8 @@
 	large = FALSE
 
 
-/obj/structure/closet/secure_closet/wall/update_icon()
+/obj/structure/closet/secure_closet/wall/update_icon_state()
+	. = ..()
 	if(broken)
 		icon_state = icon_broken
 	else

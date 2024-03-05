@@ -6,7 +6,7 @@
 	name = "Toxin"
 	description = "A toxic chemical."
 	reagent_state = LIQUID
-	color = "#CF3600" // rgb: 207, 54, 0
+	color = COLOR_TOXIN_TOXIN
 	var/toxpwr = 0.7 // Toxins are really weak, but without being treated, last very long.
 	custom_metabolism = REAGENTS_METABOLISM * 0.5
 	taste_description = "bitterness"
@@ -39,14 +39,14 @@
 /datum/reagent/toxin/amatoxin
 	name = "Amatoxin"
 	description = "A powerful poison derived from certain species of mushroom."
-	color = "#792300" // rgb: 121, 35, 0
+	color = COLOR_TOXIN_AMATOXIN
 	toxpwr = 1
 	taste_description = "mushrooms"
 
 /datum/reagent/toxin/mutagen
 	name = "Unstable mutagen"
 	description = "Might cause unpredictable mutations. Keep away from children."
-	color = "#13BC5E" // rgb: 19, 188, 94
+	color = COLOR_TOXIN_MUTAGEN
 	toxpwr = 0
 	taste_description = "slime"
 	taste_multi = 0.9
@@ -58,7 +58,7 @@
 /datum/reagent/toxin/phoron
 	name = "Phoron"
 	description = "Phoron in its liquid form."
-	color = "#E71B00" // rgb: 231, 27, 0
+	color = COLOR_TOXIN_PHORON
 	toxpwr = 3
 
 /datum/reagent/toxin/phoron/on_mob_life(mob/living/L, metabolism)
@@ -68,7 +68,7 @@
 /datum/reagent/toxin/lexorin
 	name = "Lexorin"
 	description = "Lexorin temporarily stops respiration. Causes tissue damage."
-	color = "#C8A5DC" // rgb: 200, 165, 220
+	color = COLOR_TOXIN_LEXORIN
 	toxpwr = 0
 	overdose_threshold = REAGENTS_OVERDOSE
 	overdose_crit_threshold = REAGENTS_OVERDOSE_CRITICAL
@@ -91,27 +91,27 @@
 /datum/reagent/toxin/cyanide //Fast and Lethal
 	name = "Cyanide"
 	description = "A highly toxic chemical."
-	color = "#CF3600" // rgb: 207, 54, 0
+	color = COLOR_TOXIN_CYANIDE
 	toxpwr = 3
 	custom_metabolism = REAGENTS_METABOLISM * 2
 
 /datum/reagent/toxin/cyanide/on_mob_life(mob/living/L, metabolism)
 	L.adjustOxyLoss(2*effect_str)
 	if(current_cycle > 10)
-		L.Sleeping(40)
+		L.Sleeping(4 SECONDS)
 	return ..()
 
 /datum/reagent/toxin/minttoxin
 	name = "Mint Toxin"
 	description = "Useful for dealing with undesirable customers."
-	color = "#CF3600" // rgb: 207, 54, 0
+	color = COLOR_TOXIN_MINTTOXIN
 	toxpwr = 0
 	taste_description = "mint"
 
 /datum/reagent/toxin/carpotoxin
 	name = "Carpotoxin"
 	description = "A deadly neurotoxin produced by the dreaded space carp."
-	color = "#003333" // rgb: 0, 51, 51
+	color = COLOR_TOXIN_CARPOTOXIN
 	toxpwr = 2
 	taste_description = "fish"
 
@@ -119,7 +119,7 @@
 	name = "Zombie Powder"
 	description = "A strong neurotoxin that puts the subject into a death-like state."
 	reagent_state = SOLID
-	color = "#669900" // rgb: 102, 153, 0
+	color = COLOR_TOXIN_HUSKPOWDER
 	toxpwr = 0.5
 	taste_description = "death"
 
@@ -139,7 +139,7 @@
 /datum/reagent/toxin/mindbreaker
 	name = "Mindbreaker Toxin"
 	description = "A powerful hallucinogen, it can cause fatal effects in users."
-	color = "#B31008" // rgb: 139, 166, 233
+	color = COLOR_TOXIN_MINDBREAKER
 	toxpwr = 0
 	overdose_threshold = REAGENTS_OVERDOSE
 	overdose_crit_threshold = REAGENTS_OVERDOSE_CRITICAL
@@ -168,7 +168,7 @@
 	name = "fertilizer"
 	description = "A chemical mix good for growing plants with."
 	toxpwr = 0.2 //It's not THAT poisonous.
-	color = "#664330" // rgb: 102, 67, 48
+	color = COLOR_TOXIN_FERTILIZER
 
 /datum/reagent/toxin/fertilizer/eznutrient
 	name = "EZ Nutrient"
@@ -182,7 +182,7 @@
 /datum/reagent/toxin/plantbgone
 	name = "Plant-B-Gone"
 	description = "A harmful toxic mixture to kill plantlife. Do not ingest!"
-	color = "#49002E" // rgb: 73, 0, 46
+	color = COLOR_TOXIN_PLANTBGONE
 	toxpwr = 1
 	taste_multi = 1
 
@@ -194,8 +194,8 @@
 		qdel(O)
 	else if(istype(O,/obj/effect/plantsegment))
 		if(prob(50)) qdel(O) //Kills kudzu too.
-	else if(istype(O,/obj/machinery/portable_atmospherics/hydroponics))
-		var/obj/machinery/portable_atmospherics/hydroponics/tray = O
+	else if(istype(O,/obj/machinery/hydroponics))
+		var/obj/machinery/hydroponics/tray = O
 
 		if(tray.seed)
 			tray.health -= rand(30,50)
@@ -207,18 +207,10 @@
 			tray.check_level_sanity()
 			tray.update_icon()
 
-/datum/reagent/toxin/plantbgone/reaction_mob(mob/living/L, method = TOUCH, volume, show_message = TRUE, touch_protection = 0)
-	. = ..()
-	if(!ishuman(L))
-		return
-	var/mob/living/carbon/human/H = L
-	if(H.species.species_flags & IS_PLANT) //plantmen take a LOT of damage
-		H.adjustToxLoss(10 * touch_protection)
-
 /datum/reagent/toxin/sleeptoxin
 	name = "Soporific"
 	description = "An effective hypnotic used to treat insomnia."
-	color = "#E895CC" // rgb: 232, 149, 204
+	color = COLOR_TOXIN_SLEEPTOXIN
 	toxpwr = 0
 	overdose_threshold = REAGENTS_OVERDOSE
 	overdose_crit_threshold = REAGENTS_OVERDOSE_CRITICAL
@@ -235,10 +227,10 @@
 		if(7 to 10)
 			if(prob(10))
 				L.Sleeping(10 SECONDS)
-			L.drowsyness  = max(L.drowsyness, 20)
+			L.drowsyness = max(L.drowsyness, 20)
 		if(11 to 80)
 			L.Sleeping(10 SECONDS) //previously knockdown, no good for a soporific.
-			L.drowsyness  = max(L.drowsyness, 30)
+			L.drowsyness = max(L.drowsyness, 30)
 		if(81 to INFINITY)
 			L.adjustDrowsyness(2)
 	L.reagent_pain_modifier += PAIN_REDUCTION_HEAVY
@@ -254,7 +246,7 @@
 	name = "Chloral Hydrate"
 	description = "A powerful sedative."
 	reagent_state = SOLID
-	color = "#000067" // rgb: 0, 0, 103
+	color = COLOR_TOXIN_CHLORALHYDRATE
 	toxpwr = 0
 	custom_metabolism = REAGENTS_METABOLISM * 0.5
 	overdose_threshold = REAGENTS_OVERDOSE/2
@@ -279,7 +271,7 @@
 	name = "Potassium Chloride"
 	description = "A delicious salt that stops the heart when injected into cardiac muscle."
 	reagent_state = SOLID
-	color = "#FFFFFF" // rgb: 255,255,255
+	color = COLOR_TOXIN_POTASSIUM_CHLORIDE
 	toxpwr = 0
 	overdose_threshold = REAGENTS_OVERDOSE
 	trait_flags = CHEARTSTOPPER
@@ -300,7 +292,7 @@
 /datum/reagent/toxin/potassium_chlorophoride
 	name = "Potassium Chlorophoride"
 	description = "A specific chemical based on Potassium Chloride to stop the heart for surgery. Not safe to eat!"
-	color = "#FFFFFF" // rgb: 255,255,255
+	color = COLOR_TOXIN_POTASSIUM_CHLORIDE
 	toxpwr = 2
 
 /datum/reagent/toxin/potassium_chlorophoride/on_mob_life(mob/living/L, metabolism)
@@ -328,26 +320,10 @@
 	L.reagent_pain_modifier = volume
 	return ..()
 
-/datum/reagent/toxin/beer2	//disguised as normal beer
-	name = "Beer"
-	description = "An alcoholic beverage made from malted grains, hops, yeast, and water. The fermentation appears to be incomplete." //If the players manage to analyze this, they deserve to know something is wrong.
-	color = "#664300" // rgb: 102, 67, 0
-	custom_metabolism = REAGENTS_METABOLISM * 2.5
-	taste_description = "piss water"
-
-/datum/reagent/toxin/beer2/on_mob_life(mob/living/L, metabolism)
-	switch(current_cycle)
-		if(1 to 50)
-			L.Sleeping(10 SECONDS)
-		if(51 to INFINITY)
-			L.Sleeping(10 SECONDS)
-			L.adjustToxLoss((current_cycle/2 - 25)*effect_str)
-	return ..()
-
 /datum/reagent/toxin/plasticide
 	name = "Plasticide"
 	description = "Liquid plastic, do not eat."
-	color = "#CF3600" // rgb: 207, 54, 0
+	color = COLOR_TOXIN_PLASTICIDE
 	toxpwr = 0.2
 	taste_description = "plastic"
 
@@ -358,7 +334,7 @@
 /datum/reagent/toxin/acid
 	name = "Sulphuric acid"
 	description = "A very corrosive mineral acid with the molecular formula H2SO4."
-	color = "#DB5008" // rgb: 219, 80, 8
+	color = COLOR_TOXIN_ACID
 	toxpwr = 1
 	var/meltprob = 10
 	taste_description = "acid"
@@ -429,7 +405,7 @@
 /datum/reagent/toxin/acid/polyacid
 	name = "Polytrinic acid"
 	description = "Polytrinic acid is a an extremely corrosive chemical substance."
-	color = "#8E18A9" // rgb: 142, 24, 169
+	color = COLOR_TOXIN_POLYACID
 	toxpwr = 2
 	meltprob = 30
 	taste_multi = 1.5
@@ -439,21 +415,21 @@
 	description = "Microscopic construction robots designed to tear iron out of the surroundings and build jagged structures of wire when mixed into a foam. Drinking this is a bad idea."
 	taste_description = "poor life choices, followed by burning agony"
 	reagent_state = LIQUID
-	color = "#535E66" // rgb: 83, 94, 102
+	color = COLOR_TOXIN_NANITES
 	custom_metabolism = REAGENTS_METABOLISM * 5
 	medbayblacklist = TRUE
 	reactindeadmob = FALSE
 
 /datum/reagent/toxin/nanites/on_mob_add(mob/living/L, metabolism)
 	to_chat(L, span_userdanger("Your body begins to twist and deform! Get out of the razorburn!"))
-	. = ..()
+	return ..()
 
 /datum/reagent/toxin/nanites/on_mob_life(mob/living/L, metabolism)
 	L.apply_damages(2.5*effect_str, 1.5*effect_str, 1.5*effect_str) //DO NOT DRINK THIS. Seriously!
-	L.blood_volume -= 5
+	L.adjust_blood_volume(-5)
 	if(current_cycle > 5)
 		L.apply_damages(2.5*effect_str, 1.5*effect_str, 1.5*effect_str)
-		L.blood_volume -= 5
+		L.adjust_blood_volume(-5)
 		holder.remove_reagent(/datum/reagent/toxin/nanites, (current_cycle * 0.2) - 1)
 	if(volume > 100)
 		var/turf/location = get_turf(holder.my_atom)
@@ -466,7 +442,7 @@
 	name = "Neurotoxin"
 	description = "A debilitating nerve toxin. Impedes motor control in high doses. Causes progressive loss of mobility over time."
 	reagent_state = LIQUID
-	color = "#CF3600" // rgb: 207, 54, 0
+	color = COLOR_TOXIN_XENO_NEUROTOXIN
 	custom_metabolism = REAGENTS_METABOLISM * 2
 	overdose_threshold = 10000 //Overdosing for neuro is what happens when you run out of stamina to avoid its oxy and toxin damage
 	scannable = TRUE
@@ -489,15 +465,15 @@
 
 	//Apply stamina damage, then apply any 'excess' stamina damage beyond our maximum as tox and oxy damage
 	var/stamina_loss_limit = L.maxHealth * 2
-	L.adjustStaminaLoss(min(power, max(0, stamina_loss_limit - L.staminaloss))) //If we're under our stamina_loss limit, apply the difference between our limit and current stamina damage or power, whichever's less
-
-	var/stamina_excess_damage = (L.staminaloss + power) - stamina_loss_limit
-	if(stamina_excess_damage > 0) //If we exceed maxHealth * 2 stamina damage, apply any excess as toxloss and oxyloss
-		L.adjustToxLoss(stamina_excess_damage * 0.5)
-		L.adjustOxyLoss(stamina_excess_damage * 0.5)
+	var/applied_damage = clamp(power, 0, (stamina_loss_limit - L.getStaminaLoss()))
+	L.adjustStaminaLoss(applied_damage) //If we're under our stamina_loss limit, apply the difference between our limit and current stamina damage or power, whichever's less
+	var/damage_overflow = power - applied_damage
+	if(damage_overflow > 0) //If we exceed maxHealth * 2 stamina damage, apply any excess as toxloss and oxyloss
+		L.adjustToxLoss(damage_overflow * 0.5)
+		L.adjustOxyLoss(damage_overflow * 0.5)
 		L.Losebreath(2) //So the oxy loss actually means something.
 
-	L.stuttering = max(L.stuttering, 1)
+	L.set_timed_status_effect(2 SECONDS, /datum/status_effect/speech/stutter, only_if_higher = TRUE)
 
 	if(current_cycle < 21) //Additional effects at higher cycles
 		return ..()
@@ -513,7 +489,7 @@
 	name = "Hemodile"
 	description = "Impedes motor functions and muscle response, causing slower movement."
 	reagent_state = LIQUID
-	color = "#602CFF"
+	color = COLOR_TOXIN_XENO_HEMODILE
 	custom_metabolism = 0.4
 	overdose_threshold = 10000
 	scannable = TRUE
@@ -528,12 +504,15 @@
 			slowdown_multiplier *= 2 //Each other Defiler toxin increases the multiplier by 2x; 2x if we have 1 combo chem, 4x if we have 2
 
 	switch(slowdown_multiplier) //Description varies in severity and probability with the multiplier
-		if(0 to 1 && prob(10))
-			to_chat(L, span_warning("You feel your legs tense up.") )
-		if(2 to 3.9 && prob(20))
-			to_chat(L, span_warning("You feel your legs go numb.") )
-		if(4 to INFINITY && prob(30))
-			to_chat(L, span_danger("You can barely feel your legs!") )
+		if(0 to 1)
+			if(prob(10))
+				to_chat(L, span_warning("You feel your legs tense up.") )
+		if(2 to 3.9)
+			if(prob(20))
+				to_chat(L, span_warning("You feel your legs go numb.") )
+		if(4 to INFINITY)
+			if(prob(30))
+				to_chat(L, span_danger("You can barely feel your legs!") )
 
 	L.add_movespeed_modifier(MOVESPEED_ID_XENO_HEMODILE, TRUE, 0, NONE, TRUE, 1.5 * slowdown_multiplier)
 
@@ -547,17 +526,17 @@
 	name = "Transvitox"
 	description = "Converts burn damage to toxin damage over time, and causes brute damage received to inflict extra toxin damage."
 	reagent_state = LIQUID
-	color = "#94FF00"
+	color = COLOR_TOXIN_XENO_TRANSVITOX
 	custom_metabolism = 0.4
 	overdose_threshold = 10000
 	scannable = TRUE
 	toxpwr = 0
 
 /datum/reagent/toxin/xeno_transvitox/on_mob_add(mob/living/L, metabolism, affecting)
-	RegisterSignal(L, COMSIG_HUMAN_DAMAGE_TAKEN, .proc/transvitox_human_damage_taken)
+	RegisterSignal(L, COMSIG_HUMAN_DAMAGE_TAKEN, PROC_REF(transvitox_human_damage_taken))
 
 /datum/reagent/toxin/xeno_transvitox/on_mob_life(mob/living/L, metabolism)
-	var/fire_loss = L.getFireLoss()
+	var/fire_loss = L.getFireLoss(TRUE)
 	if(!fire_loss) //If we have no burn damage, cancel out
 		return ..()
 
@@ -597,13 +576,13 @@
 	if(tox_loss > DEFILER_TRANSVITOX_CAP) //If toxin levels are already at their cap, cancel out
 		return
 
-	L.setToxLoss(clamp(tox_loss + min(L.getBruteLoss() * 0.1 * tox_cap_multiplier, damage * 0.1 * tox_cap_multiplier), tox_loss, DEFILER_TRANSVITOX_CAP)) //Deal bonus tox damage equal to a % of the lesser of the damage taken or the target's brute damage; capped at DEFILER_TRANSVITOX_CAP.
+	L.setToxLoss(clamp(tox_loss + min(L.getBruteLoss(TRUE) * 0.1 * tox_cap_multiplier, damage * 0.1 * tox_cap_multiplier), tox_loss, DEFILER_TRANSVITOX_CAP)) //Deal bonus tox damage equal to a % of the lesser of the damage taken or the target's brute damage; capped at DEFILER_TRANSVITOX_CAP.
 
 /datum/reagent/toxin/xeno_sanguinal //deals brute damage and causes persistant bleeding. Causes additional damage for each other xeno chem in the system
 	name = "Sanguinal"
 	description = "Potent blood coloured toxin that causes constant bleeding and reacts with other xeno toxins to cause rapid tissue damage."
 	reagent_state = LIQUID
-	color = "#bb0a1e"
+	color = COLOR_TOXIN_XENO_SANGUINAL
 	custom_metabolism = 0.4
 	overdose_threshold = 10000
 	scannable = TRUE
@@ -619,6 +598,12 @@
 	if(L.reagents.get_reagent_amount(/datum/reagent/toxin/xeno_transvitox))
 		L.adjustFireLoss(DEFILER_SANGUINAL_DAMAGE)
 
+	if(L.has_status_effect(STATUS_EFFECT_INTOXICATED))
+		var/datum/status_effect/stacking/intoxicated/debuff = L.has_status_effect(STATUS_EFFECT_INTOXICATED)
+		if(debuff.stacks > 0)
+			debuff.stacks = debuff.stacks + SENTINEL_INTOXICATED_SANGUINAL_INCREASE
+			L.adjustFireLoss(DEFILER_SANGUINAL_DAMAGE)
+
 	L.apply_damage(DEFILER_SANGUINAL_DAMAGE, BRUTE, sharp = TRUE)
 
 	if(iscarbon(L))
@@ -631,7 +616,7 @@
 	name = "Ozelomelyn"
 	description = "A potent Xenomorph chemical that quickly purges other chemicals in a bloodstream, causing small scale poisoning in a organism that won't progress. Appears to be strangely water based.."
 	reagent_state = LIQUID
-	color = "#f1ddcf"
+	color = COLOR_TOXIN_XENO_OZELOMELYN
 	custom_metabolism = 1.5 // metabolizes decently quickly. A sting does 15 at the same rate as neurotoxin.
 	overdose_threshold = 10000
 	scannable = TRUE
@@ -653,14 +638,14 @@
 	name = "Zombium"
 	description = "Powerful chemical able to raise the dead, origin is likely from an unidentified bioweapon."
 	reagent_state = LIQUID
-	color = "#ac0abb"
+	color = COLOR_TOXIN_ZOMBIUM
 	custom_metabolism = REAGENTS_METABOLISM * 0.25
 	scannable = TRUE
 	overdose_threshold = 20
 	overdose_crit_threshold = 50
 
 /datum/reagent/zombium/on_overdose_start(mob/living/L, metabolism)
-	RegisterSignal(L, COMSIG_HUMAN_SET_UNDEFIBBABLE, .proc/zombify)
+	RegisterSignal(L, COMSIG_HUMAN_SET_UNDEFIBBABLE, PROC_REF(zombify))
 
 /datum/reagent/zombium/on_overdose_stop(mob/living/L, metabolism)
 	UnregisterSignal(L, COMSIG_HUMAN_SET_UNDEFIBBABLE)
@@ -684,7 +669,7 @@
 	if(!H.has_working_organs())
 		return
 	H.do_jitter_animation(1000)
-	addtimer(CALLBACK(H, /mob/living/carbon/human.proc/revive_to_crit, TRUE, TRUE), SSticker.mode?.zombie_transformation_time)
+	addtimer(CALLBACK(H, TYPE_PROC_REF(/mob/living/carbon/human, revive_to_crit), TRUE, TRUE), SSticker.mode?.zombie_transformation_time)
 
 
 //SOM nerve agent
@@ -692,7 +677,7 @@
 	name = "Satrapine"
 	description = "A nerve agent designed to incapacitate targets through debilitating pain. Its severity increases over time, causing various lung complications, and will purge common painkillers. Based on a chemical agent originally used against rebelling Martian colonists, improved by the SOM for their own use."
 	reagent_state = LIQUID
-	color = "#cfb000"
+	color = COLOR_TOXIN_SATRAPINE
 	overdose_threshold = 10000
 	custom_metabolism = REAGENTS_METABOLISM
 	scannable = TRUE
@@ -721,8 +706,9 @@
 	if(current_cycle > 21)
 		L.adjustStaminaLoss(effect_str)
 		if(iscarbon(L) && prob(min(current_cycle - 10,30)))
-			L.emote("me", 1, "coughs up blood!")
-			L:drip(10)
+			var/mob/living/carbon/C = L
+			C.emote("me", 1, "coughs up blood!")
+			C.drip(10)
 		if(prob(min(current_cycle - 5,30)))
 			L.emote("me", 1, "gasps for air!")
 			L.Losebreath(4)

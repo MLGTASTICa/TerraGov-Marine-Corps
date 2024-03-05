@@ -1,9 +1,15 @@
 // Flags for the obj_flags var on /obj
 
-#define IN_USE (1<<0) // If we have a user using us, this will be set on. We will check if the user has stopped using us, and thus stop updating and LAGGING EVERYTHING!
-#define CAN_BE_HIT (1<<1) //can this be bludgeoned by items?
-#define PROJ_IGNORE_DENSITY (1<<2) // If non-dense structures can still get hit by projectiles
-#define LIGHT_CAN_BE_SHUT (1<<3) // Is sensible to nightfall ability, and its light will be turned off
+///If we have a user using us, this will be set on. We will check if the user has stopped using us, and thus stop updating and LAGGING EVERYTHING!
+#define IN_USE (1<<0) 
+///an this be bludgeoned by items?
+#define CAN_BE_HIT (1<<1) 
+///If non-dense structures can still get hit by projectiles
+#define PROJ_IGNORE_DENSITY (1<<2) 
+///Is sensible to nightfall ability, and its light will be turned off
+#define LIGHT_CAN_BE_SHUT (1<<3) 
+///Admin possession yes/no
+#define DANGEROUS_POSSESSION (1<<4) 
 
 //Fire and Acid stuff, for resistance_flags
 #define INDESTRUCTIBLE (1<<0) //doesn't take damage
@@ -15,5 +21,10 @@
 #define BANISH_IMMUNE (1<<6) //is immune it wraith's banish ability
 #define PLASMACUTTER_IMMUNE (1<<7) //is immune to being cut by a plasmacutter
 #define PROJECTILE_IMMUNE (1<<8) //Cannot be hit by projectiles
+#define PORTAL_IMMUNE (1<<9) //Cannot be teleported by wraith's portals
 
-#define RESIST_ALL (UNACIDABLE|INDESTRUCTIBLE)
+#define RESIST_ALL (UNACIDABLE|INDESTRUCTIBLE|PLASMACUTTER_IMMUNE)
+
+//projectile flags
+#define PROJECTILE_FROZEN (1<<0) //indicates a projectile is no longer moving
+#define PROJECTILE_HIT (1<<1)

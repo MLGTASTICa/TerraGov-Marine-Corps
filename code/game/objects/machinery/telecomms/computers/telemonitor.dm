@@ -8,7 +8,8 @@
 /obj/machinery/computer/telecomms/monitor
 	name = "telecommunications monitoring console"
 	desc = "Monitors the details of the telecommunications network it's synced with."
-	icon_state = "comm_monitor"
+	icon_state = "computer"
+	screen_overlay = "comm_monitor"
 
 	var/screen = 0				// the screen number:
 	var/list/machinelist = list()	// the machines located by the computer
@@ -19,6 +20,8 @@
 	var/temp = ""				// temporary feedback messages
 	circuit = /obj/item/circuitboard/computer/comm_monitor
 
+/obj/machinery/computer/telecomms/monitor/preset
+	network = "tcommsat"
 
 /obj/machinery/computer/telecomms/monitor/interact(mob/user)
 	. = ..()
@@ -94,9 +97,13 @@
 			if(length(newnet) > 15)
 				temp = "<font color = #f97c75>- FAILED: NETWORK TAG STRING TOO LENGHTLY -</font color>"
 			else
-				network = newnet
-				screen = 0
-				machinelist = list()
-				temp = "<font color = #88bff7>- NEW NETWORK TAG SET IN ADDRESS \[[network]\] -</font color>"
+				message_admins("[usr] attemped to change network to [newnet] at [src] in [ADMIN_VERBOSEJMP(loc)]")
+				if(isadmin(usr))
+					network = newnet
+					screen = 0
+					machinelist = list()
+					temp = "<font color = #88bff7>- NEW NETWORK TAG SET IN ADDRESS \[[network]\] -</font color>"
+					message_admins("[usr] has assigned new network tag to [newnet] at [src] in [ADMIN_VERBOSEJMP(loc)]")
+					log_game("[usr] has assigned new network tag to [newnet] at [src] in [AREACOORD(loc)]")
 
 	updateUsrDialog()

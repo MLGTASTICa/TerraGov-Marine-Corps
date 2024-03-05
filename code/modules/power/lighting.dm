@@ -16,7 +16,7 @@
 	var/sheets_refunded = 2
 	var/obj/machinery/light/newlight = null
 
-/obj/machinery/light_construct/Initialize()
+/obj/machinery/light_construct/Initialize(mapload)
 	. = ..()
 	if(fixture_type == "bulb")
 		icon_state = "bulb-construct-stage1"
@@ -34,12 +34,14 @@
 
 /obj/machinery/light_construct/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(iswrench(I))
 		if(stage == 1)
 			playsound(loc, 'sound/items/ratchet.ogg', 25, 1)
 			to_chat(user, "You begin deconstructing [src].")
-			if(!do_after(usr, 30, TRUE, src, BUSY_ICON_BUILD))
+			if(!do_after(usr, 30, NONE, src, BUSY_ICON_BUILD))
 				return
 			new /obj/item/stack/sheet/metal(get_turf(loc), sheets_refunded)
 			user.visible_message("[user] deconstructs [src].", \
@@ -125,6 +127,7 @@
 	name = "light fixture"
 	icon = 'icons/obj/lighting.dmi'
 	var/base_state = "tube"		// base description and icon_state
+	base_icon_state = "tube"
 	icon_state = "tube1"
 	desc = "A lighting fixture."
 	anchored = TRUE
@@ -139,18 +142,32 @@
 	var/bulb_power = 1			// basically the light_power of the emitted light source
 	var/bulb_colour = COLOR_WHITE
 	var/status = LIGHT_OK		// LIGHT_OK, _EMPTY, _BURNED or _BROKEN
+	///is our light flickering?
 	var/flickering = FALSE
-	var/light_type = /obj/item/light_bulb/tube		// the type of light item
+	///what's the duration that the light switches between on and off while flickering
+	var/flicker_time = 2 SECONDS
+	///the type of light item
+	var/light_type = /obj/item/light_bulb/tube
 	var/fitting = "tube"
 	///count of number of times switched on/off. this is used to calc the probability the light burns out
 	var/switchcount = 0
 	/// true if rigged to explode
 	var/rigged = FALSE
+	///holds the state of our flickering
+	var/light_flicker_state = FALSE
+	///if true randomize the time we turn on and off
+	var/random_flicker = FALSE
+	///upper bounds of potential flicker time when randomized
+	var/flicker_time_upper_max = 10 SECONDS
+	///lower bounds of potential flicker time when randomized
+	var/flicker_time_lower_min = 0.2 SECONDS
+	///looping sound for flickering lights
+	var/datum/looping_sound/flickeringambient/lightambient
 
 /obj/machinery/light/mainship
 	base_state = "tube"
 
-/obj/machinery/light/mainship/Initialize()
+/obj/machinery/light/mainship/Initialize(mapload)
 	. = ..()
 	GLOB.mainship_lights += src
 
@@ -165,6 +182,15 @@
 	brightness = 4
 	desc = "A small lighting fixture."
 	light_type = /obj/item/light_bulb/bulb
+	base_icon_state = "bulb"
+
+/obj/machinery/light/red
+	base_state = "tubered"
+	icon_state = "tubered1"
+	light_color = LIGHT_COLOR_FLARE
+	brightness = 3
+	bulb_power = 0.5
+	bulb_colour = LIGHT_COLOR_FLARE
 
 // the smaller bulb light fixture
 
@@ -175,6 +201,7 @@
 	brightness = 4
 	desc = "A small lighting fixture."
 	light_type = /obj/item/light_bulb/bulb
+	base_icon_state = "bulb"
 
 /obj/machinery/light/spot
 	name = "spotlight"
@@ -182,13 +209,13 @@
 	light_type = /obj/item/light_bulb/tube/large
 	brightness = 12
 
-/obj/machinery/light/built/Initialize()
+/obj/machinery/light/built/Initialize(mapload)
 	. = ..()
 	status = LIGHT_EMPTY
 	update(FALSE)
 
 
-/obj/machinery/light/small/built/Initialize()
+/obj/machinery/light/small/built/Initialize(mapload)
 	. = ..()
 	status = LIGHT_EMPTY
 	update(FALSE)
@@ -210,11 +237,9 @@
 
 	switch(fitting)
 		if("tube")
-			brightness = 8
 			if(prob(2))
 				broken(TRUE)
 		if("bulb")
-			brightness = 4
 			if(prob(5))
 				broken(TRUE)
 
@@ -236,6 +261,7 @@
 	turn_light(null, (A.lightswitch && A.power_light))
 
 /obj/machinery/light/Destroy()
+	QDEL_NULL(lightambient)
 	GLOB.nightfall_toggleable_lights -= src
 	return ..()
 
@@ -244,7 +270,8 @@
 		return TRUE
 	return FALSE
 
-/obj/machinery/light/update_icon()
+/obj/machinery/light/update_icon_state()
+	. = ..()
 	switch(status)		// set icon_states
 		if(LIGHT_OK)
 			icon_state = "[base_state][light_on]"
@@ -304,6 +331,8 @@
 			. += "The [fitting] is burnt out."
 		if(LIGHT_BROKEN)
 			. += "The [fitting] has been smashed."
+	if(flickering)
+		. += "The fixture seems to be damaged and the cabling is partially broken."
 
 
 
@@ -311,6 +340,8 @@
 
 /obj/machinery/light/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(istype(I, /obj/item/lightreplacer))
 		var/obj/item/lightreplacer/LR = I
@@ -388,28 +419,51 @@
 	var/area/A = get_area(src)
 	return A.lightswitch && A.power_light
 
-/obj/machinery/light/proc/flicker(amount = rand(10, 20))
-	if(flickering)
+///flicker lights on and off
+/obj/machinery/light/proc/flicker(toggle_flicker = FALSE)
+	if(!has_power())
+		lightambient.stop(src)
 		return
-	flickering = TRUE
-	spawn(0)
-		if(light_on && status == LIGHT_OK)
-			for(var/i = 0; i < amount; i++)
-				if(status != LIGHT_OK)
-					break
-				update(FALSE)
-				sleep(rand(5, 15))
-			update(FALSE)
+	if(toggle_flicker)
+		if(status != LIGHT_OK)
+			addtimer(CALLBACK(src, PROC_REF(flicker), TRUE), flicker_time)
+			return
+		flickering = !flickering
+		if(flickering)
+			lightambient.start(src)
+		else
+			lightambient.stop(src)
+	if(random_flicker)
+		flicker_time = rand(flicker_time_lower_min, flicker_time_upper_max)
+	if(status != LIGHT_OK)
+		lightambient.stop(src)
 		flickering = FALSE
+		addtimer(CALLBACK(src, PROC_REF(flicker), TRUE), flicker_time)
+		return
+	light_flicker_state = !light_flicker_state
+	if(!light_flicker_state)
+		flick("[base_icon_state]_flick_off", src)
+		//delay the power change long enough to get the flick() animation off
+		addtimer(CALLBACK(src, PROC_REF(flicker_power_state)), 0.3 SECONDS)
+	else
+		flick("[base_icon_state]_flick_on", src)
+		addtimer(CALLBACK(src, PROC_REF(flicker_power_state)), 0.3 SECONDS)
+		flicker_time = flicker_time * 2 //for effect it's best if the amount of time we spend off is more than the time we spend on
+	if(!flickering)
+		return
+	addtimer(CALLBACK(src, PROC_REF(flicker)), flicker_time)
 
-// ai attack - make lights flicker, because why not
-
-/obj/machinery/light/attack_ai(mob/user)
-	flicker(1)
-
+///proc to toggle power on and off for light
+/obj/machinery/light/proc/flicker_power_state(turn_on = TRUE, turn_off = FALSE)
+	if(!light_flicker_state)
+		pick(playsound(loc, 'sound/effects/lightfizz.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz2.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz3.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz4.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz5.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz6.ogg', 10, TRUE))
+		update(FALSE)
+	else
+		pick(playsound(loc, 'sound/effects/lightfizz.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz2.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz3.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz4.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz5.ogg', 10, TRUE), playsound(loc, 'sound/effects/lightfizz6.ogg', 10, TRUE))
+		turn_light(null, FALSE)
 
 //Xenos smashing lights
-/obj/machinery/light/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = 0, isrightclick = FALSE)
+/obj/machinery/light/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = X.xeno_caste.melee_ap, isrightclick = FALSE)
 	if(X.status_flags & INCORPOREAL)
 		return
 	if(status == 2) //Ignore if broken.
@@ -441,6 +495,7 @@
 	if(light_on)
 		var/prot = 0
 		var/mob/living/carbon/human/H = user
+		var/datum/limb/limb_check = H.get_limb(H.hand? "l_hand" : "r_hand")
 
 		if(istype(H))
 
@@ -451,8 +506,8 @@
 		else
 			prot = 1
 
-		if(prot > 0)
-			to_chat(user, "You remove the light [fitting]")
+		if(prot > 0 || isrobot(H) || (limb_check.limb_status & LIMB_ROBOT))
+			to_chat(user, "You remove the light [fitting].")
 		else
 			to_chat(user, "You try to remove the light [fitting], but it's too hot and you don't want to burn your hand.")
 			return				// if burned, don't remove the light
@@ -513,6 +568,9 @@
 		if(EXPLODE_LIGHT)
 			if (prob(50))
 				broken()
+		if(EXPLODE_WEAK)
+			if (prob(25))
+				broken()
 
 
 //timed process
@@ -528,6 +586,9 @@
 // called when area power state changes
 /obj/machinery/light/power_change()
 	var/area/A = get_area(src)
+	if(flickering)
+		lightambient.start(src)
+		addtimer(CALLBACK(src, PROC_REF(flicker)), flicker_time)
 	turn_light(null, (A.lightswitch && A.power_light))
 
 // called when on fire
@@ -540,10 +601,10 @@
 
 /obj/machinery/light/proc/explode()
 	broken()	// break it first to give a warning
-	addtimer(CALLBACK(src, .proc/delayed_explosion), 0.5 SECONDS)
+	addtimer(CALLBACK(src, PROC_REF(delayed_explosion)), 0.5 SECONDS)
 
 /obj/machinery/light/proc/delayed_explosion()
-	explosion(loc, 0, 1, 3, 2)
+	explosion(loc, 0, 1, 3, 0, 2)
 	qdel(src)
 
 // the light item
@@ -552,6 +613,10 @@
 
 /obj/item/light_bulb
 	icon = 'icons/obj/lighting.dmi'
+	item_icons = list(
+		slot_l_hand_str = 'icons/mob/inhands/equipment/lights_left.dmi',
+		slot_r_hand_str = 'icons/mob/inhands/equipment/lights_right.dmi',
+	)
 	force = 2
 	throwforce = 5
 	w_class = WEIGHT_CLASS_SMALL
@@ -562,7 +627,9 @@
 	var/brightness = 2 //how much light it gives off
 
 /obj/item/light_bulb/throw_impact(atom/hit_atom)
-	..()
+	. = ..()
+	if(!.)
+		return
 	shatter()
 
 /obj/item/light_bulb/tube
@@ -571,7 +638,6 @@
 	icon_state = "ltube"
 	base_state = "ltube"
 	item_state = "c_tube"
-	materials = list(/datum/material/glass = 100)
 	brightness = 8
 
 /obj/item/light_bulb/tube/large
@@ -584,9 +650,25 @@
 	desc = "A replacement light bulb."
 	icon_state = "lbulb"
 	base_state = "lbulb"
-	item_state = "contvapour"
-	materials = list(/datum/material/glass = 100)
 	brightness = 5
+
+/obj/item/light_bulb/bulb/attack_turf(turf/T, mob/living/user)
+	var/turf/open/floor/light/light_tile = T
+	if(!istype(light_tile))
+		return
+	if(status != LIGHT_OK)
+		to_chat(user, span_notice("The replacement bulb is broken."))
+		return
+	var/obj/item/stack/tile/light/existing_bulb = light_tile.floor_tile
+	if(existing_bulb.state == LIGHT_TILE_OK)
+		to_chat(user, span_notice("The lightbulb seems fine, no need to replace it."))
+		return
+
+	user.drop_held_item(src)
+	qdel(src)
+	existing_bulb.state = 0
+	light_tile.update_icon()
+	to_chat(user, span_notice("You replace the light bulb."))
 
 /obj/item/light_bulb/bulb/fire
 	name = "fire bulb"
@@ -611,7 +693,7 @@
 			desc = "A broken [name]."
 
 
-/obj/item/light_bulb/Initialize()
+/obj/item/light_bulb/Initialize(mapload)
 	. = ..()
 	switch(name)
 		if("light tube")
@@ -625,6 +707,8 @@
 // if a syringe, can inject phoron to make it explode
 /obj/item/light_bulb/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(istype(I, /obj/item/reagent_containers/syringe))
 		var/obj/item/reagent_containers/syringe/S = I
@@ -664,65 +748,48 @@
 	icon = 'icons/obj/landinglights.dmi'
 	icon_state = "landingstripe"
 	desc = "A landing light, if it's flashing stay clear!"
-	var/id = "" // ID for landing zone
 	anchored = TRUE
 	density = FALSE
 	layer = BELOW_TABLE_LAYER
 	use_power = ACTIVE_POWER_USE
 	idle_power_usage = 2
 	active_power_usage = 20
-	power_channel = LIGHT //Lights are calc'd via area so they dont need to be in the machine list
-	resistance_flags = RESIST_ALL
+	resistance_flags = RESIST_ALL|DROPSHIP_IMMUNE
+	///ID of dropship
+	var/id
+	///port its linked to
+	var/obj/docking_port/stationary/marine_dropship/linked_port = null
 
-/obj/machinery/landinglight/Initialize()
+/obj/machinery/landinglight/Initialize(mapload)
 	. = ..()
-	turn_off()
+	GLOB.landing_lights += src
+
+/obj/machinery/landinglight/Destroy()
+	GLOB.landing_lights -= src
+	return ..()
+
+/obj/machinery/landinglight/proc/turn_on()
+	icon_state = "landingstripe1"
+	set_light(2, 2, LIGHT_COLOR_RED)
 
 /obj/machinery/landinglight/proc/turn_off()
 	icon_state = "landingstripe"
 	set_light(0)
 
-/obj/machinery/landinglight/ds1
-
-
-/obj/machinery/landinglight/ds1/Initialize(mapload, ...)
-	. = ..()
+/obj/machinery/landinglight/alamo
 	id = SHUTTLE_ALAMO
 
-/obj/machinery/landinglight/ds2
+/obj/machinery/landinglight/lz1
+	id = "lz1"
 
+/obj/machinery/landinglight/lz2
+	id = "lz2"
 
-/obj/machinery/landinglight/ds2/Initialize(mapload, ...)
-	. = ..()
-	id = SHUTTLE_NORMANDY // ID for landing zone
+/obj/machinery/landinglight/cas
+	id = SHUTTLE_CAS_DOCK
 
-/obj/machinery/landinglight/proc/turn_on()
-	icon_state = "landingstripe0"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds1/delayone/turn_on()
-	icon_state = "landingstripe1"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds1/delaytwo/turn_on()
-	icon_state = "landingstripe2"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds1/delaythree/turn_on()
-	icon_state = "landingstripe3"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds2/delayone/turn_on()
-	icon_state = "landingstripe1"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds2/delaytwo/turn_on()
-	icon_state = "landingstripe2"
-	set_light(2,2)
-
-/obj/machinery/landinglight/ds2/delaythree/turn_on()
-	icon_state = "landingstripe3"
-	set_light(2,2)
+/obj/machinery/landinglight/tadpole
+	id = SHUTTLE_TADPOLE
 
 /obj/machinery/floor_warn_light
 	name = "alarm light"
@@ -741,7 +808,7 @@
 	light_power = 0
 	light_range = 0
 
-/obj/machinery/floor_warn_light/self_destruct/Initialize()
+/obj/machinery/floor_warn_light/self_destruct/Initialize(mapload)
 	. = ..()
 	SSevacuation.alarm_lights += src
 

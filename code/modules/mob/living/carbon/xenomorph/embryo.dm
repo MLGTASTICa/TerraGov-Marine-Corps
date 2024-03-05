@@ -1,8 +1,8 @@
 /obj/item/alien_embryo
 	name = "alien embryo"
 	desc = "All slimy and yucky."
-	icon = 'icons/Xeno/1x1_Xenos.dmi'
-	icon_state = "Larva Dead"
+	icon = 'icons/Xeno/castes/larva.dmi'
+	icon_state = "Embryo"
 	var/grinder_datum = /datum/reagent/consumable/larvajelly //good ol cookin
 	var/grinder_amount = 5
 	var/mob/living/affected_mob
@@ -12,11 +12,13 @@
 	var/counter = 0
 	///How long before the larva is kicked out, * SSobj wait
 	var/larva_autoburst_countdown = 20
+	///How long will the embryo's growth rate be increased
+	var/boost_timer = 0
 	var/hivenumber = XENO_HIVE_NORMAL
 	var/admin = FALSE
 
 
-/obj/item/alien_embryo/Initialize()
+/obj/item/alien_embryo/Initialize(mapload)
 	. = ..()
 	if(!isliving(loc))
 		return
@@ -76,6 +78,9 @@
 	if(affected_mob.reagents.get_reagent_amount(/datum/reagent/medicine/larvaway))
 		counter -= 1 //Halves larval growth progress, for some tradeoffs. Larval toxin purges this
 
+	if(boost_timer)
+		counter += 2.5 //Doubles larval growth progress. Burst time in ~4 min.
+		adjust_boost_timer(-1)
 
 	if(stage < 5 && counter >= 120)
 		counter = 0
@@ -139,7 +144,7 @@
 
 	new_xeno = new(affected_mob)
 
-	new_xeno.hivenumber = hivenumber
+	new_xeno.transfer_to_hive(hivenumber)
 	new_xeno.update_icons()
 
 	//If we have a candidate, transfer it over.
@@ -166,7 +171,7 @@
 
 	victim.emote_burstscream()
 
-	addtimer(CALLBACK(src, .proc/burst, victim), 3 SECONDS)
+	addtimer(CALLBACK(src, PROC_REF(burst), victim), 3 SECONDS)
 
 
 /mob/living/carbon/xenomorph/larva/proc/burst(mob/living/carbon/victim)
@@ -179,9 +184,9 @@
 
 	victim.update_burst()
 
-	if(istype(victim.loc, /obj/vehicle/multitile/root))
-		var/obj/vehicle/multitile/root/V = victim.loc
-		V.handle_player_exit(src)
+	if(istype(victim.loc, /obj/vehicle/sealed))
+		var/obj/vehicle/sealed/armored/veh = victim.loc
+		forceMove(veh.exit_location(src))
 	else
 		forceMove(get_turf(victim)) //moved to the turf directly so we don't get stuck inside a cryopod or another mob container.
 	playsound(src, pick('sound/voice/alien_chestburst.ogg','sound/voice/alien_chestburst2.ogg'), 25)
@@ -215,7 +220,7 @@
 	log_combat(src, null, "chestbursted as a larva.")
 	log_game("[key_name(src)] chestbursted as a larva at [AREACOORD(src)].")
 
-	if((locate(/obj/structure/bed/nest) in loc) && hive.living_xeno_queen?.z == loc.z)
+	if(((locate(/obj/structure/bed/nest) in loc) && hive.living_xeno_ruler?.z == loc.z) || (!mind))
 		burrow()
 
 	victim.death()
@@ -229,3 +234,15 @@
 	if(species.species_flags & NO_PAIN)
 		return
 	emote("burstscream")
+
+
+///Adjusts the growth acceleration timer
+/obj/item/alien_embryo/proc/adjust_boost_timer(amount, capped = 0, override_time = FALSE)
+	if(override_time)
+		boost_timer = max(amount, 0)
+	else
+		boost_timer = max(boost_timer + amount, 0)
+
+	if(capped > 0)
+		boost_timer = min(boost_timer, capped)
+	return

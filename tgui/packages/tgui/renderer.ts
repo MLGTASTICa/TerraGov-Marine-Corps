@@ -1,5 +1,6 @@
 import { perf } from 'common/perf';
-import { render } from 'inferno';
+import { render } from 'react-dom';
+
 import { createLogger } from './logging';
 
 const logger = createLogger('renderer');
@@ -22,6 +23,7 @@ type CreateRenderer = <T extends unknown[] = [unknown]>(
   getVNode?: (...args: T) => any,
 ) => (...args: T) => void;
 
+// prettier-ignore
 export const createRenderer: CreateRenderer = (getVNode) => (...args) => {
   perf.mark('render/start');
   // Start rendering

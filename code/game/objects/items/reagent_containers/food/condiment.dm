@@ -8,18 +8,15 @@
 /obj/item/reagent_containers/food/condiment
 	name = "Condiment Container"
 	desc = "Just your average condiment container."
-	icon = 'icons/obj/items/food.dmi'
+	icon = 'icons/obj/items/food/condiment.dmi'
 	icon_state = "emptycondiment"
 	init_reagent_flags = OPENCONTAINER
 	possible_transfer_amounts = list(1,5,10)
 	center_of_mass = list("x"=16, "y"=6)
 	volume = 50
 
-/obj/item/reagent_containers/food/condiment/attackby(obj/item/W, mob/user)
-		return
-
 /obj/item/reagent_containers/food/condiment/attack_self(mob/user)
-		return
+	return
 
 /obj/item/reagent_containers/food/condiment/attack(mob/M, mob/user, def_zone)
 	var/datum/reagents/R = reagents
@@ -36,6 +33,7 @@
 				return
 			to_chat(H, span_notice("You swallow some of contents of the [src]."))
 			if(reagents.total_volume)
+				record_reagent_consumption(min(10, reagents.total_volume), reagents.reagent_list, user)
 				reagents.trans_to(H, 10)
 			playsound(H.loc,'sound/items/drink.ogg', 15, 1)
 			return 1
@@ -44,12 +42,13 @@
 				to_chat(user, span_warning("They have a monitor for a head, where do you think you're going to put that?"))
 				return
 			M.visible_message(span_warning("[user] attempts to feed [M] [src]."))
-			if(!do_mob(user, M, 30, BUSY_ICON_FRIENDLY))
+			if(!do_after(user, 3 SECONDS, NONE, M, BUSY_ICON_FRIENDLY))
 				return
 			M.visible_message(span_warning("[user] feeds [M] [src]."))
 			var/rgt_list_text = get_reagent_list_text()
 			log_combat(user, M, "fed", src, "Reagents: [rgt_list_text]")
 			if(reagents.total_volume)
+				record_reagent_consumption(min(10, reagents.total_volume), reagents.reagent_list, user, M)
 				reagents.reaction(M, INGEST)
 				reagents.trans_to(M, 10)
 			playsound(M.loc,'sound/items/drink.ogg', 15, 1)
@@ -87,7 +86,7 @@
 /obj/item/reagent_containers/food/condiment/on_reagent_change()
 	if(icon_state == "saltshakersmall" || icon_state == "peppermillsmall")
 		return
-	if(reagents.reagent_list.len > 0)
+	if(length(reagents.reagent_list) > 0)
 		switch(reagents.get_master_reagent_id())
 			if(/datum/reagent/consumable/ketchup)
 				name = "Ketchup"
@@ -135,7 +134,7 @@
 				center_of_mass = list("x"=16, "y"=6)
 			else
 				name = "Misc Condiment Bottle"
-				if (reagents.reagent_list.len==1)
+				if (length(reagents.reagent_list) == 1)
 					desc = "Looks like it is [reagents.get_master_reagent_name()], but you are not sure."
 				else
 					desc = "A mixture of various condiments. [reagents.get_master_reagent_name()] is one of them."

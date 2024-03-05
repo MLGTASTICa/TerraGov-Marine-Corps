@@ -1,35 +1,45 @@
 import { useBackend, useLocalState } from '../backend';
-import { Button, Section, Box, LabeledList, ProgressBar, Modal, Divider, Tabs, Stack } from '../components';
+import {
+  Box,
+  Button,
+  Divider,
+  LabeledList,
+  Modal,
+  ProgressBar,
+  Section,
+  Stack,
+  Tabs,
+} from '../components';
 import { Window } from '../layouts';
 
-
 type VendingData = {
-  vendor_name: string,
-  displayed_records: VendingRecord[],
-  hidden_records: VendingRecord[],
-  coin_records: VendingRecord[],
-  tabs: string[],
-  stock: VendingStock,
-  currently_vending: VendingRecord | null,
-  extended: number,
-  coin: string,
+  vendor_name: string;
+  displayed_records: VendingRecord[];
+  hidden_records: VendingRecord[];
+  coin_records: VendingRecord[];
+  tabs: string[];
+  stock: VendingStock;
+  currently_vending: VendingRecord | null;
+  extended: number;
+  coin: string;
+  ui_theme: string;
 };
 
 type VendingStock = {
-  [ key: string ]: number
+  [key: string]: number;
 };
 
 type VendingRecord = {
-  product_name: string,
-  product_color: string,
-  prod_price: number,
-  prod_desc: string,
-  ref: string,
-  tab: string,
-}
+  product_name: string;
+  product_color: string;
+  prod_price: number;
+  prod_desc: string;
+  ref: string;
+  tab: string;
+};
 
-export const Vending = (props, context) => {
-  const { act, data } = useBackend<VendingData>(context);
+export const Vending = (props) => {
+  const { act, data } = useBackend<VendingData>();
 
   const {
     vendor_name,
@@ -38,40 +48,34 @@ export const Vending = (props, context) => {
     coin_records,
     extended,
     tabs,
+    ui_theme,
   } = data;
 
-  const [
-    showDesc,
-    setShowDesc,
-  ] = useLocalState(context, 'showDesc', null);
+  const [showDesc, setShowDesc] = useLocalState('showDesc', null);
 
-  const [
-    showEmpty,
-    setShowEmpty,
-  ] = useLocalState(context, 'showEmpty', false);
+  const [showEmpty, setShowEmpty] = useLocalState('showEmpty', false);
 
-  const [
-    selectedTab,
-    setSelectedTab,
-  ] = useLocalState(context, 'selectedTab', tabs.length ? tabs[0] : null);
+  const [selectedTab, setSelectedTab] = useLocalState(
+    'selectedTab',
+    tabs.length ? tabs[0] : null,
+  );
 
   return (
     <Window
-      title={vendor_name || "Vending Machine"}
+      title={vendor_name || 'Vending Machine'}
       width={500}
-      height={600}>
+      height={600}
+      theme={ui_theme}
+    >
       {showDesc ? (
         <Modal width="400px">
           <Box>{showDesc}</Box>
-          <Button
-            content="Dismiss"
-            onClick={() => setShowDesc(null)} />
+          <Button content="Dismiss" onClick={() => setShowDesc(null)} />
         </Modal>
       ) : (
         currently_vending && (
           <Modal width="400px">
-            <Buying
-              vending={currently_vending} />
+            <Buying vending={currently_vending} />
           </Modal>
         )
       )}
@@ -83,33 +87,35 @@ export const Vending = (props, context) => {
               <Button
                 icon="power-off"
                 selected={showEmpty}
-                onClick={() => setShowEmpty(!showEmpty)}>
+                onClick={() => setShowEmpty(!showEmpty)}
+              >
                 Show sold-out items
               </Button>
               <Button
                 icon="truck-loading"
                 color="good"
                 tooltip="Stock all loose items in the outlet back into the vending machine"
-                onClick={() => act('vacuum')} />
+                onClick={() => act('vacuum')}
+              />
             </>
-          }>
-          {(tabs.length > 0 && (
-            <Section
-              lineHeight={1.75}
-              textAlign="center">
+          }
+        >
+          {tabs.length > 0 && (
+            <Section lineHeight={1.75} textAlign="center">
               <Tabs>
-                <Stack
-                  wrap="wrap">
-                  {tabs.map(tabname => {
+                <Stack wrap="wrap">
+                  {tabs.map((tabname) => {
                     return (
                       <Stack.Item
                         m={0.5}
                         grow={tabname.length}
-                        basis={"content"}
-                        key={tabname}>
+                        basis={'content'}
+                        key={tabname}
+                      >
                         <Tabs.Tab
                           selected={tabname === selectedTab}
-                          onClick={() => setSelectedTab(tabname)}>
+                          onClick={() => setSelectedTab(tabname)}
+                        >
                           {tabname}
                         </Tabs.Tab>
                       </Stack.Item>
@@ -119,13 +125,9 @@ export const Vending = (props, context) => {
               </Tabs>
               <Divider />
             </Section>
-          ))}
-          {!!(coin_records.length > 0) && (
-            <Premium />
           )}
-          {hidden_records.length > 0 && !!extended && (
-            <Hacked />
-          )}
+          {!!(coin_records.length > 0) && <Premium />}
+          {hidden_records.length > 0 && !!extended && <Hacked />}
           <Products />
         </Section>
       </Window.Content>
@@ -134,31 +136,23 @@ export const Vending = (props, context) => {
 };
 
 type BuyingModalProps = {
-  vending: VendingRecord,
+  vending: VendingRecord;
 };
 
-const Buying = (props: BuyingModalProps, context) => {
-  const { act, data } = useBackend<VendingData>(context);
+const Buying = (props: BuyingModalProps) => {
+  const { act, data } = useBackend<VendingData>();
 
-  const {
-    vending,
-  } = props;
+  const { vending } = props;
 
   return (
-    <Section
-      title={"You have selected "+vending.product_name}>
+    <Section title={'You have selected ' + vending.product_name}>
       <Box>
         Please swipe your ID to pay for the article.
         <Divider />
-        <Button
-          onClick={() => act('swipe')}
-          icon="id-card"
-          ml="6px">
+        <Button onClick={() => act('swipe')} icon="id-card" ml="6px">
           Swipe
         </Button>
-        <Button
-          onClick={() => act('cancel_buying')}
-          icon="times">
+        <Button onClick={() => act('cancel_buying')} icon="times">
           Cancel
         </Button>
       </Box>
@@ -166,36 +160,25 @@ const Buying = (props: BuyingModalProps, context) => {
   );
 };
 
-
-
-
 type VendingProductEntryProps = {
-  stock: number,
-  product_color: string,
-  product_name: string,
-  prod_desc: string,
-  prod_ref: string,
-}
+  stock: number;
+  product_color: string;
+  product_name: string;
+  prod_desc: string;
+  prod_ref: string;
+};
 
-const ProductEntry = (props: VendingProductEntryProps, context) => {
-  const { act, data } = useBackend<VendingData>(context);
+const ProductEntry = (props: VendingProductEntryProps) => {
+  const { act, data } = useBackend<VendingData>();
 
-  const {
-    currently_vending,
-  } = data;
+  const { currently_vending } = data;
 
-  const {
-    stock,
-    product_color,
-    product_name,
-    prod_desc,
-    prod_ref,
-  } = props;
+  const { stock, product_color, product_name, prod_desc, prod_ref } = props;
 
-  const [
-    showDesc,
-    setShowDesc,
-  ] = useLocalState<String|null>(context, 'showDesc', null);
+  const [showDesc, setShowDesc] = useLocalState<String | null>(
+    'showDesc',
+    null,
+  );
 
   return (
     <LabeledList.Item
@@ -211,54 +194,45 @@ const ProductEntry = (props: VendingProductEntryProps, context) => {
                   good: [10, Infinity],
                   average: [5, 10],
                   bad: [0, 5],
-                }}>{stock} left
+                }}
+              >
+                {stock} left
               </ProgressBar>
-            </Box>)}
-          <Box
-            inline
-            width="4px" />
+            </Box>
+          )}
+          <Box inline width="4px" />
           <Button
-            selected={currently_vending && (
+            selected={
+              currently_vending &&
               currently_vending.product_name === product_name
-            )}
-            onClick={() => act(
-              'vend',
-              { vend: prod_ref })}
-            disabled={!stock}>
+            }
+            onClick={() => act('vend', { vend: prod_ref })}
+            disabled={!stock}
+          >
             <Box color={product_color} bold={1}>
               Vend
             </Box>
           </Button>
         </>
       }
-      label={product_name}>
-      {!!prod_desc && (
-        <Button
-          onClick={() => setShowDesc(prod_desc)}>?
-        </Button>)}
+      label={product_name}
+    >
+      {!!prod_desc && <Button onClick={() => setShowDesc(prod_desc)}>?</Button>}
     </LabeledList.Item>
   );
 };
 
+const Products = (props) => {
+  const { data } = useBackend<VendingData>();
 
-const Products = (props, context) => {
-  const { data } = useBackend<VendingData>(context);
+  const { displayed_records, stock, tabs } = data;
 
-  const {
-    displayed_records,
-    stock,
-    tabs,
-  } = data;
+  const [selectedTab, setSelectedTab] = useLocalState(
+    'selectedTab',
+    tabs.length ? tabs[0] : null,
+  );
 
-  const [
-    selectedTab,
-    setSelectedTab,
-  ] = useLocalState(context, 'selectedTab', tabs.length ? tabs[0] : null);
-
-  const [
-    showEmpty,
-    setShowEmpty,
-  ] = useLocalState(context, 'showEmpty', false);
+  const [showEmpty, setShowEmpty] = useLocalState('showEmpty', false);
 
   return (
     <Section>
@@ -267,18 +241,19 @@ const Products = (props, context) => {
           <Box color="red">No product loaded!</Box>
         ) : (
           displayed_records
-            .filter(record => !record.tab || record.tab === selectedTab)
-            .map(display_record => {
+            .filter((record) => !record.tab || record.tab === selectedTab)
+            .map((display_record) => {
               return (
-                ((showEmpty || !!stock[display_record.product_name]) && (
+                (showEmpty || !!stock[display_record.product_name]) && (
                   <ProductEntry
                     stock={stock[display_record.product_name]}
                     key={display_record.product_name}
                     product_color={display_record.product_color}
                     product_name={display_record.product_name}
                     prod_desc={display_record.prod_desc}
-                    prod_ref={display_record.ref} />
-                ))
+                    prod_ref={display_record.ref}
+                  />
+                )
               );
             })
         )}
@@ -287,26 +262,22 @@ const Products = (props, context) => {
   );
 };
 
-const Hacked = (props, context) => {
-  const { act, data } = useBackend<VendingData>(context);
+const Hacked = (props) => {
+  const { act, data } = useBackend<VendingData>();
 
-  const {
-    hidden_records,
-    stock,
-    tabs,
-  } = data;
+  const { hidden_records, stock, tabs } = data;
 
-  const [
-    selectedTab,
-    setSelectedTab,
-  ] = useLocalState(context, 'selectedTab', tabs.length ? tabs[0] : null);
+  const [selectedTab, setSelectedTab] = useLocalState(
+    'selectedTab',
+    tabs.length ? tabs[0] : null,
+  );
 
   return (
     <Section title="$*FD!!F">
       <LabeledList>
         {hidden_records
-          .filter(record => !record.tab || record.tab === selectedTab)
-          .map(hidden_record => {
+          .filter((record) => !record.tab || record.tab === selectedTab)
+          .map((hidden_record) => {
             return (
               <ProductEntry
                 stock={stock[hidden_record.product_name]}
@@ -314,7 +285,8 @@ const Hacked = (props, context) => {
                 product_color={hidden_record.product_color}
                 product_name={hidden_record.product_name}
                 prod_desc={hidden_record.prod_desc}
-                prod_ref={hidden_record.ref} />
+                prod_ref={hidden_record.ref}
+              />
             );
           })}
       </LabeledList>
@@ -322,49 +294,45 @@ const Hacked = (props, context) => {
   );
 };
 
+const Premium = (props) => {
+  const { act, data } = useBackend<VendingData>();
 
-const Premium = (props, context) => {
-  const { act, data } = useBackend<VendingData>(context);
+  const { coin_records, stock, coin, tabs } = data;
 
-  const {
-    coin_records,
-    stock,
-    coin,
-    tabs,
-  } = data;
-
-  const [
-    selectedTab,
-    setSelectedTab,
-  ] = useLocalState(context, 'selectedTab', tabs.length ? tabs[0] : null);
+  const [selectedTab, setSelectedTab] = useLocalState(
+    'selectedTab',
+    tabs.length ? tabs[0] : null,
+  );
 
   return (
     <Section
-      title={"Coin slot: "+(coin ? coin : "No coin inserted")}
-      buttons={coin && (
-        <Button
-          icon="donate"
-          onClick={() => act("remove_coin")}>
-          Remove
-        </Button>)}>
-      {!!coin
-        && (
-          <LabeledList>
-            {coin_records
-              .filter(record => !record.tab || record.tab === selectedTab)
-              .map(coin_record => {
-                return (
-                  <ProductEntry
-                    stock={stock[coin_record.product_name]}
-                    key={coin_record.product_name}
-                    product_color={coin_record.product_color}
-                    product_name={coin_record.product_name}
-                    prod_desc={coin_record.prod_desc}
-                    prod_ref={coin_record.ref} />
-                );
-              })}
-          </LabeledList>
-        )}
+      title={'Coin slot: ' + (coin ? coin : 'No coin inserted')}
+      buttons={
+        coin && (
+          <Button icon="donate" onClick={() => act('remove_coin')}>
+            Remove
+          </Button>
+        )
+      }
+    >
+      {!!coin && (
+        <LabeledList>
+          {coin_records
+            .filter((record) => !record.tab || record.tab === selectedTab)
+            .map((coin_record) => {
+              return (
+                <ProductEntry
+                  stock={stock[coin_record.product_name]}
+                  key={coin_record.product_name}
+                  product_color={coin_record.product_color}
+                  product_name={coin_record.product_name}
+                  prod_desc={coin_record.prod_desc}
+                  prod_ref={coin_record.ref}
+                />
+              );
+            })}
+        </LabeledList>
+      )}
     </Section>
   );
 };

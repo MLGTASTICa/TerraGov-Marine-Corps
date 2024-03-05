@@ -85,6 +85,8 @@
 #define TABLE_LAYER 2.8
 #define ABOVE_TABLE_LAYER 2.81
 
+#define TRACKING_FLUID_LAYER 2.84
+
 #define DOOR_OPEN_LAYER 2.85	//Under all objects if opened. 2.85 due to tables being at 2.8
 
 #define DOOR_HELPER_LAYER 2.86 //keep this above OPEN_DOOR_LAYER
@@ -119,11 +121,15 @@
 #define ABOVE_LYING_MOB_LAYER 3.9 //drone (not the xeno)
 
 //#define MOB_LAYER 4
-#define RIVER_OVERLAY_LAYER 4.01
+
+#define MOB_JUMP_LAYER 4.05
 
 #define ABOVE_MOB_LAYER 4.1
 
-#define TANK_BARREL_LAYER 4.2
+///for platform corner structures
+#define ABOVE_MOB_PLATFORM_LAYER 4.11
+
+#define ABOVE_MOB_PROP_LAYER 4.2
 
 #define TANK_TURRET_LAYER 4.27
 
@@ -175,6 +181,8 @@
 
 /// Plane for balloon text (text that fades up)
 #define BALLOON_CHAT_PLANE 110
+/// Bubble for typing indicators
+#define TYPING_LAYER 500
 
 #define O_LIGHTING_VISUAL_PLANE 120
 #define O_LIGHTING_VISUAL_LAYER 16
@@ -223,6 +231,8 @@
 #define HUD_LAYER 24
 #define ABOVE_HUD_PLANE 2000
 #define ABOVE_HUD_LAYER 25
+#define INTRO_PLANE 2001
+#define INTRO_LAYER 26
 
 #define ADMIN_POPUP_LAYER 1
 

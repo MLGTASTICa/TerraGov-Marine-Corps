@@ -13,7 +13,10 @@
 	max_integrity = 150
 	hud_possible = list(MACHINE_HEALTH_HUD, MACHINE_AMMO_HUD)
 	flags_atom = BUMP_ATTACKABLE
-	soft_armor = list("melee" = 25, "bullet" = 85, "laser" = 50, "energy" = 100, "bomb" = 50, "bio" = 100, "rad" = 100, "fire" = 25, "acid" = 25)
+	soft_armor = list(MELEE = 25, BULLET = 85, LASER = 50, ENERGY = 100, BOMB = 50, BIO = 100, FIRE = 25, ACID = 25)
+	allow_pass_flags = PASS_AIR|PASS_LOW_STRUCTURE|PASS_THROW
+	/// Needed to keep track of any slowdowns and/or diagonal movement
+	var/next_move_delay = 0
 	/// Path of "turret" attached
 	var/obj/item/uav_turret/turret_path
 	/// Type of the turret attached
@@ -41,14 +44,14 @@
 	/// If something is already controlling the vehicle
 	var/controlled = FALSE
 	/// Flags for unmanned vehicules
-	var/unmanned_flags = OVERLAY_TURRET|HAS_LIGHTS|UNDERCARRIAGE
+	var/unmanned_flags = OVERLAY_TURRET|HAS_LIGHTS
 	/// Iff flags, to prevent friendly fire from sg and aiming marines
 	var/iff_signal = TGMC_LOYALIST_IFF
 	/// muzzleflash stuff
 	var/atom/movable/vis_obj/effect/muzzle_flash/flash
 	COOLDOWN_DECLARE(fire_cooldown)
 
-/obj/vehicle/unmanned/Initialize()
+/obj/vehicle/unmanned/Initialize(mapload)
 	. = ..()
 	ammo = GLOB.ammo_list[ammo]
 	name += " " + num2text(serial)
@@ -68,14 +71,19 @@
 		max_rounds = initial(spawn_equipped_type.max_rounds)
 		update_icon()
 	hud_set_uav_ammo()
-
+	SSminimaps.add_marker(src, MINIMAP_FLAG_MARINE, image('icons/UI_icons/map_blips.dmi', null, "uav"))
 
 /obj/vehicle/unmanned/Destroy()
-	. = ..()
 	GLOB.unmanned_vehicles -= src
 	QDEL_NULL(flash)
+	QDEL_NULL(in_chamber)
+	return ..()
 
-/obj/vehicle/unmanned/take_damage(damage_amount, damage_type, damage_flag, effects, attack_dir, armour_penetration)
+/obj/vehicle/unmanned/obj_destruction(damage_amount, damage_type, damage_flag, mob/living/blame_mob)
+	robogibs(src)
+	return ..()
+
+/obj/vehicle/unmanned/take_damage(damage_amount, damage_type = BRUTE, damage_flag = "", effects = TRUE, attack_dir, armour_penetration = 0, mob/living/blame_mob)
 	. = ..()
 	hud_set_machine_health()
 
@@ -99,29 +107,40 @@
 
 /obj/vehicle/unmanned/examine(mob/user, distance, infix, suffix)
 	. = ..()
-	if(ishuman(user))
-		. += "It has [current_rounds] ammo left."
+	if(current_rounds > 0)
+		. += "It has [current_rounds] shots left."
+	switch(turret_type)
+		if(TURRET_TYPE_LIGHT)
+			. += "It is equipped with a light weapon system. It uses 11x35mm ammo."
+		if(TURRET_TYPE_HEAVY)
+			. += "It is equipped with a heavy weapon system. It uses 12x40mm ammo."
+		if(TURRET_TYPE_EXPLOSIVE)
+			. += "It is equipped with an explosive weapon system. "
+		if(TURRET_TYPE_DROIDLASER)
+			. += "It is equipped with a droid weapon system. It uses 11x35mm ammo."
 
 /obj/vehicle/unmanned/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 	if(istype(I, /obj/item/uav_turret) || istype(I, /obj/item/explosive/plastique))
 		return equip_turret(I, user)
 	if(istype(I, /obj/item/ammo_magazine))
 		return reload_turret(I, user)
 
-/obj/vehicle/unmanned/CanAllowThrough(atom/movable/mover, turf/target)
-	. = ..()
-	if((unmanned_flags & UNDERCARRIAGE) && istype(mover) && CHECK_BITFIELD(mover.flags_pass, PASSTABLE))
-		return TRUE
-
 /obj/vehicle/unmanned/relaymove(mob/living/user, direction)
 	if(user.incapacitated())
 		return FALSE
 
-	if(world.time < last_move_time + move_delay)
+	if(world.time < last_move_time + next_move_delay)
 		return
 
-	return Move(get_step(src, direction))
+	. = Move(get_step(src, direction))
+
+	if(ISDIAGONALDIR(direction)) //moved diagonally successfully
+		next_move_delay = move_delay * DIAG_MOVEMENT_ADDED_DELAY_MULTIPLIER
+	else
+		next_move_delay = move_delay
 
 ///Try to desequip the turret
 /obj/vehicle/unmanned/wrench_act(mob/living/user, obj/item/I)
@@ -130,7 +149,7 @@
 		to_chat(user,"<span class='warning'>There is nothing to remove from [src]!</span>")
 		return
 	user.visible_message(span_notice("[user] starts to remove [initial(turret_path.name)] from [src]"),	span_notice("You start to remove [initial(turret_path.name)] from [src]"))
-	if(!do_after(user, 3 SECONDS, TRUE, src))
+	if(!do_after(user, 3 SECONDS, NONE, src))
 		return
 	var/obj/item/equipment = new turret_path
 	user.visible_message(span_notice("[user] removes [equipment] from [src]."),
@@ -148,17 +167,27 @@
 	return
 
 ///Try to reload the turret of our vehicule
-/obj/vehicle/unmanned/proc/reload_turret(obj/item/ammo_magazine/ammo, mob/user)
-	if(!ispath(ammo.type, initial(turret_path.magazine_type)))
+/obj/vehicle/unmanned/proc/reload_turret(obj/item/ammo_magazine/reload_ammo, mob/user)
+	if(!ispath(reload_ammo.type, initial(turret_path.magazine_type)))
 		to_chat(user, span_warning("This is not the right ammo!"))
 		return
-	user.visible_message(span_notice("[user] starts to reload [src] with [ammo]."), span_notice("You start to reload [src] with [ammo]."))
-	if(!do_after(user, 3 SECONDS, TRUE, src))
+	if(max_rounds == current_rounds)
+		to_chat(user, span_warning("The [src] ammo storage is already full!"))
 		return
-	user.visible_message(span_notice("[user] reloads [src] with [ammo]."), span_notice("You reload [src] with [ammo]."))
-	current_rounds = min(current_rounds + ammo.current_rounds, max_rounds)
+	user.visible_message(span_notice("[user] starts to reload [src] with [reload_ammo]."), span_notice("You start to reload [src] with [reload_ammo]."))
+	if(!do_after(user, 3 SECONDS, NONE, src))
+		return
+	current_rounds = current_rounds + reload_ammo.current_rounds
+	if(current_rounds > max_rounds)
+		var/extra_rounds = current_rounds - max_rounds
+		reload_ammo.current_rounds = extra_rounds
+		current_rounds = max_rounds
+	user.visible_message(span_notice("[user] reloads [src] with [reload_ammo]."), span_notice("You reload [src] with [reload_ammo]. It now has [current_rounds] shots left out of a maximum of [max_rounds]."))
 	playsound(loc, 'sound/weapons/guns/interact/smartgun_unload.ogg', 25, 1)
-	qdel(ammo)
+	if(reload_ammo.current_rounds < 1)
+		qdel(reload_ammo)
+	update_icon()
+	hud_set_uav_ammo()
 
 /// Try to equip a turret on the vehicle
 /obj/vehicle/unmanned/proc/equip_turret(obj/item/I, mob/user)
@@ -172,7 +201,7 @@
 			return
 	user.visible_message(span_notice("[user] starts to attach [I] to [src]."),
 	span_notice("You start to attach [I] to [src]."))
-	if(!do_after(user, 3 SECONDS, TRUE, src, BUSY_ICON_GENERIC))
+	if(!do_after(user, 3 SECONDS, NONE, src, BUSY_ICON_GENERIC))
 		return
 	turret_path = I.type
 	if(istype(I, /obj/item/uav_turret))
@@ -196,7 +225,7 @@
  */
 /obj/vehicle/unmanned/proc/on_link(atom/remote_controller)
 	SHOULD_CALL_PARENT(TRUE)
-	RegisterSignal(src, COMSIG_REMOTECONTROL_CHANGED, .proc/on_remote_toggle)
+	RegisterSignal(src, COMSIG_REMOTECONTROL_CHANGED, PROC_REF(on_remote_toggle))
 	controlled = TRUE
 
 /**
@@ -247,7 +276,7 @@
 		flash.transform = null
 		flash.transform = turn(flash.transform, angle)
 		vis_contents += flash
-		addtimer(CALLBACK(src, .proc/delete_muzzle_flash), 0.2 SECONDS)
+		addtimer(CALLBACK(src, PROC_REF(delete_muzzle_flash)), 0.2 SECONDS)
 		hud_set_uav_ammo()
 	return TRUE
 
@@ -255,56 +284,14 @@
 /obj/vehicle/unmanned/proc/delete_muzzle_flash()
 	vis_contents -= flash
 
-/obj/vehicle/unmanned/post_crush_act(mob/living/carbon/xenomorph/charger, datum/action/xeno_action/ready_charge/charge_datum)
-	take_damage(charger.xeno_caste.melee_damage * charger.xeno_melee_damage_modifier, BRUTE, "melee")
-
-/obj/vehicle/unmanned/punch_act(mob/living/carbon/xenomorph/X, damage, target_zone)
-	X.do_attack_animation(src, ATTACK_EFFECT_YELLOWPUNCH)
-	X.do_attack_animation(src, ATTACK_EFFECT_DISARM2)
-	attack_generic(X, damage * 4, BRUTE, "", FALSE) //Deals 4 times regular damage to uavs
-	X.visible_message(span_xenodanger("\The [X] smashes [src] with a devastating punch!"), \
-		span_xenodanger("We smash [src] with a devastating punch!"), visible_message_flags = COMBAT_MESSAGE)
-	playsound(src, pick('sound/effects/bang.ogg','sound/effects/metal_crash.ogg','sound/effects/meteorimpact.ogg'), 50, 1)
-	Shake(4, 4, 2 SECONDS)
-
 /obj/vehicle/unmanned/flamer_fire_act(burnlevel)
-	take_damage(burnlevel / 2, BURN, "fire")
+	take_damage(burnlevel / 2, BURN, FIRE)
 
 /obj/vehicle/unmanned/fire_act()
-	take_damage(20, BURN, "fire")
-
-/obj/vehicle/unmanned/effect_smoke(obj/effect/particle_effect/smoke/S)
-	. = ..()
-	if(CHECK_BITFIELD(S.smoke_traits, SMOKE_XENO_ACID))
-		take_damage(20 * S.strength)
+	take_damage(20, BURN, FIRE)
 
 /obj/vehicle/unmanned/welder_act(mob/living/user, obj/item/I)
-	if(user.do_actions)
-		balloon_alert(user, "You're already busy!")
-		return FALSE
-	if(obj_integrity >= max_integrity)
-		balloon_alert(user, "This doesn't need repairing")
-		return TRUE
-	if(user.skills.getRating("engineer") < SKILL_ENGINEER_ENGI)
-		balloon_alert_to_viewers("[user] tries to repair the [name]" , ignored_mobs = user)
-		balloon_alert(user, "You try to repair the [name]")
-		var/fumbling_time = 10 SECONDS - 2 SECONDS * user.skills.getRating("engineer")
-		if(!do_after(user, fumbling_time, TRUE, src, BUSY_ICON_UNSKILLED, extra_checks = CALLBACK(I, /obj/item/tool/weldingtool.proc/isOn)))
-			return FALSE
-	balloon_alert_to_viewers("[user] begins repairing the vehicle", ignored_mobs = user)
-	balloon_alert(user, "You begin repairing the [name]")
-	if(!do_after(user, 2 SECONDS, extra_checks = CALLBACK(I, /obj/item/tool/weldingtool.proc/isOn)))
-		balloon_alert_to_viewers("[user] stops repairing the [name]")
-		return
-	if(!I.use_tool(src, user, 0, volume=50, amount=1))
-		return TRUE
-	repair_damage(35)
-	if(obj_integrity == max_integrity)
-		balloon_alert_to_viewers("Fully repaired!")
-	else
-		balloon_alert_to_viewers("[user] repairs the [name]", ignored_mobs = user)
-		balloon_alert(user, "You finish repairing the [name]")
-	return TRUE
+	return welder_repair_act(user, I, 35, 2 SECONDS, 0, SKILL_ENGINEER_ENGI, 1, 4 SECONDS)
 
 /obj/vehicle/unmanned/medium
 	name = "UV-M Gecko"
@@ -335,4 +322,3 @@
 	new /obj/item/ammo_magazine/box11x35mm(src)
 	new /obj/item/ammo_magazine/box11x35mm(src)
 	new /obj/item/unmanned_vehicle_remote(src)
-

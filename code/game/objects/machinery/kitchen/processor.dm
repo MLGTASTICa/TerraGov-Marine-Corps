@@ -19,36 +19,12 @@
 	var/input
 	var/output
 	var/time = 40
-	process(loc, what)
-		if (src.output && loc)
-			new src.output(loc)
-		if (what)
-			qdel(what)
 
-	/* objs */
-	meat
-		input = /obj/item/reagent_containers/food/snacks/meat
-		output = /obj/item/reagent_containers/food/snacks/meatball
-
-	potato
-		input = /obj/item/reagent_containers/food/snacks/grown/potato
-		output = /obj/item/reagent_containers/food/snacks/rawsticks
-
-	carrot
-		input = /obj/item/reagent_containers/food/snacks/grown/carrot
-		output = /obj/item/reagent_containers/food/snacks/carrotfries
-
-	soybeans
-		input = /obj/item/reagent_containers/food/snacks/grown/soybeans
-		output = /obj/item/reagent_containers/food/snacks/soydope
-
-	wheat
-		input = /obj/item/reagent_containers/food/snacks/grown/wheat
-		output = /obj/item/reagent_containers/food/snacks/flour
-
-	spaghetti
-		input = /obj/item/reagent_containers/food/snacks/flour
-		output = /obj/item/reagent_containers/food/snacks/spagetti
+/datum/food_processor_process/process(loc, what)
+	if (src.output && loc)
+		new src.output(loc)
+	if (what)
+		qdel(what)
 
 
 /obj/machinery/processor/proc/select_recipe(X)
@@ -61,6 +37,8 @@
 
 /obj/machinery/processor/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(processing)
 		to_chat(user, span_warning("The processor is in the process of processing."))
@@ -72,7 +50,7 @@
 
 	var/obj/O = I
 
-	if(istype(I, /obj/item/grab))
+	if(isgrabitem(I))
 		var/obj/item/grab/G = I
 		O = G.grabbed_thing
 
@@ -85,6 +63,29 @@
 	user.drop_held_item()
 	O.forceMove(src)
 
+/obj/machinery/processor/grab_interact(obj/item/grab/grab, mob/user, base_damage = BASE_OBJ_SLAM_DAMAGE, is_sharp = FALSE)
+	if(!is_operational())
+		return ..()
+	if(isxeno(user))
+		return
+	if(!isliving(grab.grabbed_thing))
+		return
+	if(user.a_intent != INTENT_HARM)
+		return
+	if(user.grab_state <= GRAB_AGGRESSIVE)
+		to_chat(user, span_warning("You need a better grip to do that!"))
+		return
+	var/mob/living/grabbed_mob = grab.grabbed_thing
+	user.visible_message(span_danger("[user] starts to force [grabbed_mob] into [src]!"), span_notice("You start to force [grabbed_mob] into [src]!"))
+	if(!do_after(user, 3 SECONDS, NONE, src, BUSY_ICON_HOSTILE))
+		return
+
+	user.visible_message(span_danger("[user] processes [grabbed_mob]!"), span_notice("You process [grabbed_mob]!"), "You hear churning.")
+	log_combat(user, grabbed_mob, "food processed")
+	playsound(loc, 'sound/machines/blender.ogg', 25, 1)
+	grabbed_mob.apply_damage(80, BRUTE, "head", MELEE, TRUE, updating_health = TRUE)
+	return TRUE
+
 /obj/machinery/processor/attack_hand(mob/living/user)
 	. = ..()
 	if(.)
@@ -94,7 +95,7 @@
 	if(src.processing)
 		to_chat(user, span_warning("The processor is in the process of processing."))
 		return 1
-	if(src.contents.len == 0)
+	if(length(src.contents) == 0)
 		to_chat(user, span_warning("The processor is empty."))
 		return 1
 	for(var/O in src.contents)

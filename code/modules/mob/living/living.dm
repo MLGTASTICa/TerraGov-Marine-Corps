@@ -11,22 +11,24 @@
 	updatehealth()
 
 
-//this updates all special effects: knockdown, druggy, stuttering, etc..
+//this updates all special effects: knockdown, druggy, etc.., DELETE ME!!
 /mob/living/proc/handle_status_effects()
 	if(no_stun)//anti-chainstun flag for alien tackles
 		no_stun = max(0, no_stun - 1) //decrement by 1.
 
 	handle_drugged()
-	handle_stuttering()
-	handle_slurring()
 	handle_slowdown()
-	handle_stagger()
-
-	handle_received_auras()
 
 ///Adjusts our stats based on the auras we've received and care about, then cleans out the list for next tick.
-/mob/living/proc/handle_received_auras()
+/mob/living/proc/finish_aura_cycle()
 	received_auras.Cut() //Living, of course, doesn't care about any
+
+///Can we receive this aura? returns bool
+/mob/living/proc/can_receive_aura(aura_type, atom/source, datum/aura_bearer/bearer)
+	SHOULD_CALL_PARENT(TRUE)
+	. = TRUE
+	if(faction != bearer.faction)
+		return FALSE
 
 ///Update what auras we'll receive this life tick if it's either new or stronger than current. aura_type as AURA_ define, strength as number.
 /mob/living/proc/receive_aura(aura_type, strength)
@@ -54,21 +56,10 @@
 	reagent_shock_modifier = 0
 	reagent_pain_modifier = 0
 
-/mob/living/proc/handle_stuttering()
-	if(stuttering)
-		stuttering = max(stuttering-1, 0)
-	return stuttering
-
 /mob/living/proc/handle_drugged()
 	if(druggy)
 		adjust_drugginess(-1)
 	return druggy
-
-/mob/living/proc/handle_slurring()
-	if(slurring)
-		slurring = max(slurring-1, 0)
-	return slurring
-
 
 /mob/living/proc/handle_staminaloss()
 	if(world.time < last_staminaloss_dmg + 3 SECONDS)
@@ -95,7 +86,7 @@
 	. = ..()
 	update_cloak()
 
-/mob/living/Initialize()
+/mob/living/Initialize(mapload)
 	. = ..()
 	register_init_signals()
 	update_move_intent_effects()
@@ -106,13 +97,12 @@
 
 	set_armor_datum()
 	AddElement(/datum/element/gesture)
-	stamina_regen_modifiers = list()
-	received_auras = list()
-	emitted_auras = list()
-	RegisterSignal(src, COMSIG_AURA_STARTED, .proc/add_emitted_auras)
-	RegisterSignal(src, COMSIG_AURA_FINISHED, .proc/remove_emitted_auras)
+	AddElement(/datum/element/keybinding_update)
+	AddElement(/datum/element/directional_attack)
 
 /mob/living/Destroy()
+	for(var/datum/status_effect/effect AS in status_effects)
+		qdel(effect)
 	for(var/i in embedded_objects)
 		var/obj/item/embedded = i
 		if(embedded.embedding.embedded_flags & EMBEDDED_DEL_ON_HOLDER_DEL)
@@ -141,48 +131,8 @@
 	return
 
 
-/mob/proc/get_contents()
-	return
-
-
-//Recursive function to find everything a mob is holding.
-/mob/living/get_contents(obj/item/storage/Storage = null)
-	var/list/L = list()
-
-	if(Storage) //If it called itself
-		L += Storage.return_inv()
-
-		for(var/obj/item/gift/G in Storage.return_inv()) //Check for gift-wrapped items
-			L += G.gift
-			if(istype(G.gift, /obj/item/storage))
-				L += get_contents(G.gift)
-
-		for(var/obj/item/smallDelivery/D in Storage.return_inv()) //Check for package wrapped items
-			L += D.wrapped
-			if(istype(D.wrapped, /obj/item/storage)) //this should never happen
-				L += get_contents(D.wrapped)
-		return L
-
-	else
-
-		L += contents
-		for(var/obj/item/storage/S in contents)	//Check for storage items
-			L += get_contents(S)
-
-		for(var/obj/item/gift/G in contents) //Check for gift-wrapped items
-			L += G.gift
-			if(istype(G.gift, /obj/item/storage))
-				L += get_contents(G.gift)
-
-		for(var/obj/item/smallDelivery/D in contents) //Check for package wrapped items
-			L += D.wrapped
-			if(istype(D.wrapped, /obj/item/storage)) //this should never happen
-				L += get_contents(D.wrapped)
-		return L
-
-
 /mob/living/proc/check_contents_for(A)
-	var/list/L = get_contents()
+	var/list/L = GetAllContents()
 
 	for(var/obj/O in L)
 		if(O.type == A)
@@ -266,14 +216,6 @@
 /mob/living/proc/update_camera_location(oldLoc)
 	return
 
-
-/mob/living/vv_get_dropdown()
-	. = ..()
-	. += "---"
-	.["Add Language"] = "?_src_=vars;[HrefToken()];addlanguage=[REF(src)]"
-	.["Remove Language"] = "?_src_=vars;[HrefToken()];remlanguage=[REF(src)]"
-
-
 /mob/proc/resist_grab()
 	return //returning 1 means we successfully broke free
 
@@ -348,6 +290,10 @@
 /mob/living/is_drawable(allowmobs = TRUE)
 	return (allowmobs && can_inject())
 
+#define NO_SWAP 0
+#define SWAPPING 1
+#define PHASING 2
+
 /mob/living/Bump(atom/A)
 	. = ..()
 	if(.) //We are thrown onto something.
@@ -370,17 +316,24 @@
 						to_chat(src, span_warning("[L] is restraining [P], you cannot push past."))
 					return
 
-		if(!L.buckled && !L.anchored && !moving_diagonally)
-			var/mob_swap = FALSE
+		if(!L.buckled && !L.anchored)
+			var/mob_swap_mode = NO_SWAP
 			//the puller can always swap with its victim if on grab intent
 			if(L.pulledby == src && a_intent == INTENT_GRAB)
-				mob_swap = TRUE
+				mob_swap_mode = SWAPPING
 			//restrained people act if they were on 'help' intent to prevent a person being pulled from being seperated from their puller
-			else if((L.restrained() || L.a_intent == INTENT_HELP) && (restrained() || a_intent == INTENT_HELP) && L.mob_size < MOB_SIZE_XENO)
-				mob_swap = TRUE
-			else if((mob_size >= MOB_SIZE_XENO || mob_size > L.mob_size) && a_intent == INTENT_HELP) //Larger mobs can shove aside smaller ones. Xenos can always shove xenos
-				mob_swap = TRUE
-			if(mob_swap)
+			else if((L.restrained() || L.a_intent == INTENT_HELP) && (restrained() || a_intent == INTENT_HELP) && L.move_force < MOVE_FORCE_VERY_STRONG)
+				mob_swap_mode = SWAPPING
+			else if(get_xeno_hivenumber() == L.get_xeno_hivenumber() && (L.pass_flags & PASS_XENO || pass_flags & PASS_XENO))
+				mob_swap_mode = PHASING
+			else if((move_resist >= MOVE_FORCE_VERY_STRONG || move_resist > L.move_force) && a_intent == INTENT_HELP) //Larger mobs can shove aside smaller ones. Xenos can always shove xenos
+				mob_swap_mode = SWAPPING
+			/* If we're moving diagonally, but the mob isn't on the diagonal destination turf and the destination turf is enterable we have no reason to shuffle/push them
+			 * However we also do not want mobs of smaller move forces being able to pass us diagonally if our move resist is larger, unless they're the same faction as us
+			*/
+			if(moving_diagonally && (get_dir(src, L) in GLOB.cardinals) && (L.faction == faction || L.move_resist <= move_force) && get_step(src, dir).Enter(src, loc))
+				mob_swap_mode = PHASING
+			if(mob_swap_mode)
 				//switch our position with L
 				if(loc && !loc.Adjacent(L.loc))
 					return
@@ -388,26 +341,24 @@
 				var/oldloc = loc
 				var/oldLloc = L.loc
 
-				var/L_passmob = (L.flags_pass & PASSMOB) // we give PASSMOB to both mobs to avoid bumping other mobs during swap.
-				var/src_passmob = (flags_pass & PASSMOB)
-				L.flags_pass |= PASSMOB
-				flags_pass |= PASSMOB
+				var/L_passmob = (L.pass_flags & PASS_MOB) // we give PASS_MOB to both mobs to avoid bumping other mobs during swap.
+				var/src_passmob = (pass_flags & PASS_MOB)
+				L.pass_flags |= PASS_MOB
+				pass_flags |= PASS_MOB
 
-				var/move_failed = FALSE
-				if(!L.Move(oldloc) || !Move(oldLloc))
-					L.forceMove(oldLloc)
-					forceMove(oldloc)
-					move_failed = TRUE
+				if(!moving_diagonally) //the diagonal move already does this for us
+					Move(oldLloc)
+				if(mob_swap_mode == SWAPPING)
+					L.Move(oldloc)
 
 				if(!src_passmob)
-					flags_pass &= ~PASSMOB
+					pass_flags &= ~PASS_MOB
 				if(!L_passmob)
-					L.flags_pass &= ~PASSMOB
+					L.pass_flags &= ~PASS_MOB
 
 				now_pushing = FALSE
 
-				if(!move_failed)
-					return TURF_ENTER_ALREADY_MOVED
+				return TURF_ENTER_ALREADY_MOVED
 
 		if(mob_size < L.mob_size) //Can't go around pushing things larger than us.
 			return
@@ -426,14 +377,17 @@
 
 
 //Called when we want to push an atom/movable
-/mob/living/proc/PushAM(atom/movable/AM)
+/mob/living/proc/PushAM(atom/movable/AM, force = move_force)
 	if(AM.anchored)
 		return
 	if(now_pushing)
 		return
 	if(moving_diagonally) // No pushing in diagonal move
 		return
-	if(!client && (mob_size < MOB_SIZE_SMALL))
+	if(!client)
+		return
+	var/mob/mob_to_push = AM
+	if(istype(mob_to_push) && mob_to_push.lying_angle)
 		return
 	now_pushing = TRUE
 	var/dir_to_target = get_dir(src, AM)
@@ -447,6 +401,24 @@
 	if(!dir_to_target)
 		dir_to_target = dir
 
+	var/push_anchored = FALSE
+	if((AM.move_resist * MOVE_FORCE_CRUSH_RATIO) <= force)
+		if(move_crush(AM, move_force, dir_to_target))
+			push_anchored = TRUE
+	if((AM.move_resist * MOVE_FORCE_FORCEPUSH_RATIO) <= force) //trigger move_crush and/or force_push regardless of if we can push it normally
+		if(force_push(AM, move_force, dir_to_target, push_anchored))
+			push_anchored = TRUE
+	if(ismob(AM))
+		var/atom/movable/mob_buckle = mob_to_push.buckled
+		// If we can't pull them because of what they're buckled to, make sure we can push the thing they're buckled to instead.
+		// If neither are true, we're not pushing anymore.
+		if(mob_buckle && (mob_buckle.buckle_flags & BUCKLE_PREVENTS_PULL || (force < (mob_buckle.move_resist * MOVE_FORCE_PUSH_RATIO))))
+			now_pushing = FALSE
+			return
+	if((AM.anchored && !push_anchored) || (force < (AM.move_resist * MOVE_FORCE_PUSH_RATIO)))
+		now_pushing = FALSE
+		return
+
 	if(istype(AM, /obj/structure/window))
 		var/obj/structure/window/W = AM
 		if(W.is_full_window())
@@ -459,13 +431,18 @@
 	now_pushing = FALSE
 
 
-/mob/living/throw_at(atom/target, range, speed, thrower, spin, flying = FALSE)
+/mob/living/throw_at(atom/target, range, speed, thrower, spin, flying = FALSE, targetted_throw = TRUE)
 	if(!target)
 		return 0
 	if(pulling && !flying)
 		stop_pulling() //being thrown breaks pulls.
 	if(pulledby)
 		pulledby.stop_pulling()
+	if(LAZYLEN(buckled_mobs) && !flying)
+		unbuckle_all_mobs(force = TRUE)
+	if(buckled)
+		buckled.unbuckle_mob(src)
+
 	return ..()
 
 /**
@@ -475,16 +452,8 @@
  * range : how far the mob will be thrown, in tile
  * speed : how fast will it fly
  */
-/mob/living/proc/fly_at(atom/target, range, speed, hovering_time)
-	addtimer(CALLBACK(src,.proc/end_flying, layer), hovering_time)
-	layer = FLY_LAYER
-	set_flying(TRUE)
+/mob/living/proc/fly_at(atom/target, range, speed)
 	throw_at(target, range, speed, null, 0, TRUE)
-
-///remove flying flags and reset the sprite layer
-/mob/living/proc/end_flying(init_layer)
-	set_flying(FALSE)
-	layer = init_layer
 
 /mob/living/proc/offer_mob()
 	GLOB.offered_mob_list += src
@@ -494,10 +463,10 @@
 /mob/living/proc/get_permeability_protection()
 	return LIVING_PERM_COEFF
 
-/mob/proc/flash_act(intensity = 1, bypass_checks, type = /obj/screen/fullscreen/flash, duration)
+/mob/proc/flash_act(intensity = 1, bypass_checks, type = /atom/movable/screen/fullscreen/flash, duration)
 	return
 
-/mob/living/carbon/flash_act(intensity = 1, bypass_checks, type = /obj/screen/fullscreen/flash, duration = 40)
+/mob/living/carbon/flash_act(intensity = 1, bypass_checks, type = /atom/movable/screen/fullscreen/flash, duration = 40)
 	if( bypass_checks || (get_eye_protection() < intensity && !(disabilities & BLIND)) )
 		overlay_fullscreen_timer(duration, 20, "flash", type)
 		return TRUE
@@ -518,15 +487,21 @@
 	else if(eye_blind == 1)
 		adjust_blindness(-1)
 	if(tinttotal)
-		overlay_fullscreen("tint", /obj/screen/fullscreen/impaired, tinttotal)
+		overlay_fullscreen("tint", /atom/movable/screen/fullscreen/impaired, tinttotal)
 		return TRUE
 	else
 		clear_fullscreen("tint", 0)
 		return FALSE
 
+///Modifies the mobs inherent accuracy modifier
 /mob/living/proc/adjust_mob_accuracy(accuracy_mod)
 	ranged_accuracy_mod += accuracy_mod
+	SEND_SIGNAL(src, COMSIG_RANGED_ACCURACY_MOD_CHANGED, accuracy_mod)
 
+///Modifies the mobs inherent scatter modifier
+/mob/living/proc/adjust_mob_scatter(scatter_mod)
+	ranged_scatter_mod += scatter_mod
+	SEND_SIGNAL(src, COMSIG_RANGED_SCATTER_MOD_CHANGED, scatter_mod)
 
 /mob/living/proc/smokecloak_on()
 
@@ -571,15 +546,6 @@
 	else
 		smokecloak_off()
 
-/mob/living/proc/do_jitter_animation(jitteriness)
-	var/amplitude = min(4, (jitteriness/100) + 1)
-	var/pixel_x_diff = rand(-amplitude, amplitude)
-	var/pixel_y_diff = rand(-amplitude/3, amplitude/3)
-	var/final_pixel_x = initial(pixel_x)
-	var/final_pixel_y = initial(pixel_y)
-	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff , time = 2, loop = 6)
-	animate(pixel_x = final_pixel_x , pixel_y = final_pixel_y , time = 2)
-
 
 /*
 adds a dizziness amount to a mob
@@ -594,7 +560,7 @@ below 100 is not dizzy
 	dizziness = clamp(dizziness + amount, 0, 1000)
 
 	if(dizziness > 100 && !is_dizzy)
-		INVOKE_ASYNC(src, .proc/dizzy_process)
+		INVOKE_ASYNC(src, PROC_REF(dizzy_process))
 
 /mob/living/proc/dizzy_process()
 	is_dizzy = TRUE
@@ -604,7 +570,7 @@ below 100 is not dizzy
 			client.pixel_x = amplitude * sin(0.008 * dizziness * world.time)
 			client.pixel_y = amplitude * cos(0.008 * dizziness * world.time)
 
-		sleep(1)
+		sleep(0.1 SECONDS)
 	//endwhile - reset the pixel offsets to zero
 	is_dizzy = FALSE
 	if(client)
@@ -704,18 +670,6 @@ below 100 is not dizzy
 	return name
 
 
-/mob/living/proc/point_to_atom(atom/A, turf/T)
-	var/turf/tile = get_turf(A)
-	if (!tile)
-		return FALSE
-	var/turf/our_tile = get_turf(src)
-	TIMER_COOLDOWN_START(src, COOLDOWN_POINT, 1 SECONDS)
-	var/obj/visual = new /obj/effect/overlay/temp/point/big(our_tile, 0, invisibility)
-	animate(visual, pixel_x = (tile.x - our_tile.x) * world.icon_size + A.pixel_x, pixel_y = (tile.y - our_tile.y) * world.icon_size + A.pixel_y, time = 1.7, easing = EASE_OUT)
-	visible_message("<b>[src]</b> points to [A]")
-	return TRUE
-
-
 /mob/living/get_photo_description(obj/item/camera/camera)
 	var/holding
 	if(l_hand || r_hand)
@@ -778,35 +732,12 @@ below 100 is not dizzy
 	else
 		stop_pulling()
 
-
-/mob/living/vv_edit_var(var_name, var_value)
-	switch(var_name)
-		if("maxHealth")
-			if(!isnum(var_value) || var_value <= 0)
-				return FALSE
-		if("stat")
-			if((stat == DEAD) && (var_value < DEAD))//Bringing the dead back to life
-				GLOB.dead_mob_list -= src
-				GLOB.alive_living_list += src
-			if((stat < DEAD) && (var_value == DEAD))//Kill he
-				GLOB.alive_living_list -= src
-				GLOB.dead_mob_list += src
-	. = ..()
-	switch(var_name)
-		if("eye_blind")
-			set_blindness(var_value)
-		if("eye_blurry")
-			set_blurriness(var_value)
-		if("maxHealth")
-			updatehealth()
-		if("resize")
-			update_transform()
-		if("lighting_alpha")
-			sync_lighting_plane_alpha()
-
-
 /mob/living/can_interact_with(datum/D)
-	return D.Adjacent(src)
+	return D == src || D.Adjacent(src)
+
+/mob/living/onTransitZ(old_z, new_z)
+	. = ..()
+	set_jump_component()
 
 /**
  * Changes the inclination angle of a mob, used by humans and others to differentiate between standing up and prone positions.
@@ -876,19 +807,12 @@ below 100 is not dizzy
 	if(wielded_item && (wielded_item.flags_item & WIELDED)) //this segment checks if the item in your hand is twohanded.
 		var/obj/item/weapon/twohanded/offhand/offhand = get_inactive_held_item()
 		if(offhand && (offhand.flags_item & WIELDED))
-			to_chat(src, span_warning("Your other hand is too busy holding \the [offhand.name]"))
-			return
-		else
 			wielded_item.unwield(src) //Get rid of it.
 	hand = !hand
 	SEND_SIGNAL(src, COMSIG_CARBON_SWAPPED_HANDS)
 	if(hud_used.l_hand_hud_object && hud_used.r_hand_hud_object)
-		hud_used.l_hand_hud_object.update_icon(hand)
-		hud_used.r_hand_hud_object.update_icon(!hand)
-		if(hand)	//This being 1 means the left hand is in use
-			hud_used.l_hand_hud_object.add_overlay("hand_active")
-		else
-			hud_used.r_hand_hud_object.add_overlay("hand_active")
+		hud_used.l_hand_hud_object.update_icon()
+		hud_used.r_hand_hud_object.update_icon()
 	return
 
 ///Swap to the hand clicked on the hud
@@ -917,7 +841,7 @@ below 100 is not dizzy
 				if(timeleft(afk_timer_id) <= afk_timer)
 					return
 				deltimer(afk_timer_id) //We'll go with the shorter timer.
-			afk_timer_id = addtimer(CALLBACK(src, .proc/on_sdd_grace_period_end), afk_timer, TIMER_STOPPABLE)
+			afk_timer_id = addtimer(CALLBACK(src, PROC_REF(on_sdd_grace_period_end)), afk_timer, TIMER_STOPPABLE)
 	afk_status = new_status
 	SEND_SIGNAL(src, COMSIG_CARBON_SETAFKSTATUS, new_status, afk_timer)
 
@@ -949,3 +873,132 @@ below 100 is not dizzy
 	if(is_ventcrawling)  //If we are in a vent, fetch a fresh vent map
 		add_ventcrawl(loc)
 		get_up()
+
+///Sets up the jump component for the mob. Proc args can be altered so different mobs have different 'default' jump settings
+/mob/living/proc/set_jump_component(duration = 0.5 SECONDS, cooldown = 1 SECONDS, cost = 8, height = 16, sound = null, flags = JUMP_SHADOW, flags_pass = PASS_LOW_STRUCTURE|PASS_FIRE|PASS_TANK)
+	var/gravity = get_gravity()
+	if(gravity < 1) //low grav
+		duration *= 2.5 - gravity
+		cooldown *= 2 - gravity
+		cost *= gravity * 0.5
+		height *= 2 - gravity
+		if(gravity <= 0.75)
+			flags_pass |= PASS_DEFENSIVE_STRUCTURE
+	else if(gravity > 1) //high grav
+		duration *= gravity * 0.5
+		cooldown *= gravity
+		cost *= gravity
+		height *= gravity * 0.5
+
+	AddComponent(/datum/component/jump, _jump_duration = duration, _jump_cooldown = cooldown, _stamina_cost = cost, _jump_height = height, _jump_sound = sound, _jump_flags = flags, _jumper_allow_pass_flags = flags_pass)
+
+/mob/living/vv_edit_var(var_name, var_value)
+	switch(var_name)
+		if (NAMEOF(src, maxHealth))
+			if (!isnum(var_value) || var_value <= 0)
+				return FALSE
+		if(NAMEOF(src, health)) //this doesn't work. gotta use procs instead.
+			return FALSE
+		if(NAMEOF(src, stat))
+			if((stat == DEAD) && (var_value < DEAD))//Bringing the dead back to life
+				GLOB.dead_mob_list -= src
+				GLOB.alive_living_list += src
+			if((stat < DEAD) && (var_value == DEAD))//Kill he
+				GLOB.alive_living_list -= src
+				GLOB.dead_mob_list += src
+		if(NAMEOF(src, resting))
+			set_resting(var_value)
+			. = TRUE
+		if(NAMEOF(src, lying_angle))
+			set_lying_angle(var_value)
+			. = TRUE
+		if(NAMEOF(src, eye_blind))
+			set_blindness(var_value)
+		if(NAMEOF(src, eye_blurry))
+			set_blurriness(var_value)
+		if(NAMEOF(src, lighting_alpha))
+			sync_lighting_plane_alpha()
+		if(NAMEOF(src, resize))
+			if(var_value == 0) //prevents divisions of and by zero.
+				return FALSE
+			update_transform(var_value/resize)
+			. = TRUE
+
+	if(!isnull(.))
+		datum_flags |= DF_VAR_EDITED
+		return
+
+	. = ..()
+
+	switch(var_name)
+		if(NAMEOF(src, maxHealth))
+			updatehealth()
+
+/mob/living/vv_get_header()
+	. = ..()
+	var/refid = REF(src)
+	. += {"
+		<br><font size='1'>[VV_HREF_TARGETREF(refid, VV_HK_GIVE_DIRECT_CONTROL, "[ckey || "no ckey"]")] / [VV_HREF_TARGETREF_1V(refid, VV_HK_BASIC_EDIT, "[real_name || "no real name"]", NAMEOF(src, real_name))]</font>
+		<br><font size='1'>
+			BRUTE:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=brute' id='brute'>[getBruteLoss()]</a>
+			FIRE:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=fire' id='fire'>[getFireLoss()]</a>
+			TOXIN:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=toxin' id='toxin'>[getToxLoss()]</a>
+			OXY:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=oxygen' id='oxygen'>[getOxyLoss()]</a>
+			CLONE:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=clone' id='clone'>[getCloneLoss()]</a>
+			STAMINA:<font size='1'><a href='?_src_=vars;[HrefToken()];mobToDamage=[refid];adjustDamage=stamina' id='stamina'>[getStaminaLoss()]</a>
+		</font>
+	"}
+
+/mob/living/vv_get_dropdown()
+	. = ..()
+	VV_DROPDOWN_OPTION("", "---------")
+	VV_DROPDOWN_OPTION(VV_HK_ADD_LANGUAGE, "Add Language")
+	VV_DROPDOWN_OPTION(VV_HK_REMOVE_LANGUAGE, "Remove Language")
+	VV_DROPDOWN_OPTION(VV_HK_GIVE_SPEECH_IMPEDIMENT, "Impede Speech (Slurring, stuttering, etc)")
+
+/mob/living/vv_do_topic(list/href_list)
+	. = ..()
+
+	if(!.)
+		return
+
+	if(href_list[VV_HK_ADD_LANGUAGE])
+		if(!check_rights(NONE))
+			return
+		var/choice = tgui_input_list(usr, "Grant which language?", "Languages", GLOB.all_languages)
+		if(!choice)
+			return
+		grant_language(choice)
+	if(href_list[VV_HK_REMOVE_LANGUAGE])
+		if(!check_rights(NONE))
+			return
+		var/choice = tgui_input_list(usr, "Remove which language?", "Known Languages", src.language_holder.languages)
+		if(!choice)
+			return
+		remove_language(choice)
+	if(href_list[VV_HK_GIVE_SPEECH_IMPEDIMENT])
+		if(!check_rights(NONE))
+			return
+		admin_give_speech_impediment(usr)
+
+/// Admin only proc for giving a certain speech impediment to this mob
+/mob/living/proc/admin_give_speech_impediment(mob/admin)
+	if(!admin || !check_rights(NONE))
+		return
+
+	var/list/impediments = list()
+	for(var/datum/status_effect/possible as anything in typesof(/datum/status_effect/speech))
+		if(!initial(possible.id))
+			continue
+
+		impediments[initial(possible.id)] = possible
+
+	var/chosen = tgui_input_list(admin, "What speech impediment?", "Impede Speech", impediments)
+	if(!chosen || !ispath(impediments[chosen], /datum/status_effect/speech) || QDELETED(src) || !check_rights(NONE))
+		return
+
+	var/duration = tgui_input_number(admin, "How long should it last (in seconds)? Max is infinite duration.", "Duration", 0, INFINITY, 0 SECONDS)
+	if(!isnum(duration) || duration <= 0 || QDELETED(src) || !check_rights(NONE))
+		return
+
+	adjust_timed_status_effect(duration * 1 SECONDS, impediments[chosen])

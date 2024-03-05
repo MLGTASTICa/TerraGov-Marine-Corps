@@ -6,7 +6,7 @@
 	flags_equip_slot = NONE
 	w_class = WEIGHT_CLASS_SMALL
 
-/obj/item/clothing/tie/Initialize()
+/obj/item/clothing/tie/Initialize(mapload)
 	. = ..()
 	AddElement(/datum/element/attachment, ATTACHMENT_SLOT_UNIFORM_TIE, 'icons/obj/clothing/ties_overlay.dmi', flags_attach_features = (ATTACH_REMOVABLE|ATTACH_APPLY_ON_MOB), mob_overlay_icon = 'icons/mob/ties.dmi')
 
@@ -178,6 +178,8 @@
 
 /obj/item/clothing/tie/holobadge/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(istype(I, /obj/item/card/id))
 		var/obj/item/card/id/id_card = I

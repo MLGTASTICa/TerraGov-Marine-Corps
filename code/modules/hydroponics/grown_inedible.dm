@@ -8,29 +8,30 @@
 	var/plantname
 	var/potency = 1
 
-/obj/item/grown/Initialize()
+/obj/item/grown/Initialize(mapload)
 	. = ..()
 
 	var/datum/reagents/R = new/datum/reagents(50)
 	reagents = R
-	R.my_atom = src
+	R.my_atom = WEAKREF(src)
 
-	//Handle some post-spawn var stuff.
-	spawn(1)
-		// Fill the object up with the appropriate reagents.
-		if(!isnull(plantname))
-			var/datum/seed/S = GLOB.seed_types[plantname]
-			if(!S || !S.chems)
-				return
+/obj/item/grown/LateInitialize()
+	. = ..()
+	// Fill the object up with the appropriate reagents.
+	if(isnull(plantname))
+		return
+	var/datum/seed/S = GLOB.seed_types[plantname]
+	if(!S || !S.chems)
+		return
 
-			potency = S.potency
+	potency = S.potency
 
-			for(var/rid in S.chems)
-				var/list/reagent_data = S.chems[rid]
-				var/rtotal = reagent_data[1]
-				if(reagent_data.len > 1 && potency > 0)
-					rtotal += round(potency/reagent_data[2])
-				reagents.add_reagent(rid,max(1,rtotal))
+	for(var/rid in S.chems)
+		var/list/reagent_data = S.chems[rid]
+		var/rtotal = reagent_data[1]
+		if(length(reagent_data) > 1 && potency > 0)
+			rtotal += round(potency/reagent_data[2])
+		reagents.add_reagent(rid,max(1,rtotal))
 
 /obj/item/grown/log
 	name = "towercap"
@@ -49,6 +50,8 @@
 
 /obj/item/grown/log/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(I.sharp != IS_SHARP_ITEM_BIG)
 		return
@@ -95,7 +98,7 @@
 
 	var/potency_divisior = 5
 
-/obj/item/grown/nettle/Initialize()
+/obj/item/grown/nettle/Initialize(mapload)
 	. = ..()
 	force = round(5 + potency / potency_divisior)
 
@@ -118,7 +121,7 @@
 		playsound(loc, 'sound/weapons/bladeslice.ogg', 25, 1)
 		force -= rand(1,(force/3)+1) // When you whack someone with it, leaves fall off
 
-	sleep(1)
+	sleep(0.1 SECONDS)
 
 	if(force <= 0)
 		if(user)
@@ -156,8 +159,8 @@
 
 		M.adjust_blurriness(force/7)
 		if(prob(20))
-			M.Unconscious(force/6 *20)
-			M.Paralyze(force/15 *20)
+			M.Unconscious(force/3 SECONDS)
+			M.Paralyze(force/7.5 SECONDS)
 		M.drop_held_item()
 
 /obj/item/corncob
@@ -172,6 +175,8 @@
 
 /obj/item/corncob/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(I.sharp == IS_SHARP_ITEM_ACCURATE)
 		to_chat(user, span_notice("You use [I] to fashion a pipe out of the corn cob!"))

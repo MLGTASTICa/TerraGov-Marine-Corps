@@ -3,6 +3,7 @@
 	desc = "Does not support Pinball."
 	icon = 'icons/obj/machines/computer.dmi'
 	icon_state = "arcade"
+	screen_overlay = "arcade_screen"
 	circuit = /obj/item/circuitboard/computer/arcade
 	var/enemy_name = "Space Villain"
 	var/temp = "Sponsored by Nanotrasen and the TerraGov Marine Corps" //Temporary message, for attack messages, etc
@@ -13,7 +14,7 @@
 	var/gameover = 0
 	var/blocked = 0 //Player cannot attack/heal while set
 	var/list/prizes = list(
-		/obj/item/spacecash/c10	= 4,
+		/obj/item/spacecash/c10 = 4,
 		/obj/item/tool/lighter/zippo = 2,
 		/obj/item/storage/box/tgmc_mre = 2,
 		/obj/item/camera = 2,
@@ -30,7 +31,7 @@
 /obj/machinery/computer/arcade
 	var/turtle = 0
 
-/obj/machinery/computer/arcade/Initialize()
+/obj/machinery/computer/arcade/Initialize(mapload)
 	. = ..()
 	var/name_action
 	var/name_part1
@@ -56,9 +57,9 @@
 	dat += "<br><center>Health: [src.player_hp]|Magic: [src.player_mp]|Enemy Health: [src.enemy_hp]</center>"
 
 	if (src.gameover)
-		dat += "<center><b><a href='byond://?src=\ref[src];newgame=1'>New Game</a>"
+		dat += "<center><b><a href='byond://?src=[text_ref(src)];newgame=1'>New Game</a>"
 	else
-		dat += "<center><b><a href='byond://?src=\ref[src];attack=1'>Attack</a>|"
+		dat += "<center><b><a href='byond://?src=[text_ref(src)];attack=1'>Attack</a>|"
 		dat += "<a href='byond://?src=[REF(src)];heal=1'>Heal</a>|"
 		dat += "<a href='byond://?src=[REF(src)];charge=1'>Recharge Power</a>"
 
@@ -83,7 +84,7 @@
 			if(turtle > 0)
 				turtle--
 
-			sleep(10)
+			sleep(1 SECONDS)
 			src.enemy_hp -= attackamt
 			src.arcade_action()
 
@@ -95,7 +96,7 @@
 			src.updateUsrDialog()
 			turtle++
 
-			sleep(10)
+			sleep(1 SECONDS)
 			src.player_mp -= pointamt
 			src.player_hp += healamt
 			src.blocked = 1
@@ -111,7 +112,7 @@
 				turtle--
 
 			src.updateUsrDialog()
-			sleep(10)
+			sleep(1 SECONDS)
 			src.arcade_action()
 
 	else if (href_list["newgame"]) //Reset everything
@@ -132,7 +133,7 @@
 			src.gameover = 1
 			src.temp = "[src.enemy_name] has fallen! Rejoice!"
 
-			if(!contents.len)
+			if(!length(contents))
 				var/prizeselect = pickweight(prizes)
 				new prizeselect(src.loc)
 
@@ -154,7 +155,7 @@
 
 		if (src.player_mp <= 0)
 			src.gameover = 1
-			sleep(10)
+			sleep(1 SECONDS)
 			src.temp = "You have been drained! GAME OVER"
 
 	else if ((src.enemy_hp <= 10) && (src.enemy_mp > 4))

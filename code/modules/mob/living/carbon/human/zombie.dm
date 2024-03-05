@@ -11,13 +11,13 @@
 	slowdown = 0.5
 	default_language_holder = /datum/language_holder/zombie
 	has_organ = list(
-		"heart" =    /datum/internal_organ/heart,
-		"lungs" =    /datum/internal_organ/lungs,
-		"liver" =    /datum/internal_organ/liver,
-		"kidneys" =  /datum/internal_organ/kidneys,
-		"brain" =    /datum/internal_organ/brain/zombie,
+		"heart" = /datum/internal_organ/heart,
+		"lungs" = /datum/internal_organ/lungs,
+		"liver" = /datum/internal_organ/liver,
+		"kidneys" = /datum/internal_organ/kidneys,
+		"brain" = /datum/internal_organ/brain/zombie,
 		"appendix" = /datum/internal_organ/appendix,
-		"eyes" =     /datum/internal_organ/eyes
+		"eyes" = /datum/internal_organ/eyes
 	)
 	///Sounds made randomly by the zombie
 	var/list/sounds = list('sound/hallucinations/growl1.ogg','sound/hallucinations/growl2.ogg','sound/hallucinations/growl3.ogg','sound/hallucinations/veryfar_noise.ogg','sound/hallucinations/wail.ogg')
@@ -25,11 +25,13 @@
 	var/revive_time = 1 MINUTES
 	///How much burn and burn damage can you heal every Life tick (half a sec)
 	var/heal_rate = 10
+	var/faction = FACTION_ZOMBIE
+	var/claw_type = /obj/item/weapon/zombie_claw
 
 /datum/species/zombie/on_species_gain(mob/living/carbon/human/H, datum/species/old_species)
 	. = ..()
 	H.set_undefibbable()
-	H.faction = FACTION_ZOMBIE
+	H.faction = faction
 	H.language_holder = new default_language_holder()
 	H.setOxyLoss(0)
 	H.setToxLoss(0)
@@ -40,8 +42,8 @@
 		var/obj/item/card/id/id = H.wear_id
 		id.access = list() // A bit gamey, but let's say ids have a security against zombies
 		id.iff_signal = NONE
-	H.equip_to_slot_or_del(new /obj/item/weapon/zombie_claw, SLOT_R_HAND)
-	H.equip_to_slot_or_del(new /obj/item/weapon/zombie_claw, SLOT_L_HAND)
+	H.equip_to_slot_or_del(new claw_type, SLOT_R_HAND)
+	H.equip_to_slot_or_del(new claw_type, SLOT_L_HAND)
 	var/datum/atom_hud/health_hud = GLOB.huds[DATA_HUD_MEDICAL_OBSERVER]
 	health_hud.add_hud_to(H)
 	H.job = new /datum/job/zombie //Prevent from skewing the respawn timer if you take a zombie, it's a ghost role after all
@@ -86,7 +88,7 @@
 /datum/species/zombie/handle_death(mob/living/carbon/human/H)
 	SSmobs.stop_processing(H)
 	if(!H.on_fire && H.has_working_organs())
-		addtimer(CALLBACK(H, /mob/living/carbon/human.proc/revive_to_crit, TRUE, FALSE), revive_time)
+		addtimer(CALLBACK(H, TYPE_PROC_REF(/mob/living/carbon/human, revive_to_crit), TRUE, FALSE), revive_time)
 
 /datum/species/zombie/create_organs(mob/living/carbon/human/organless_human)
 	. = ..()
@@ -95,51 +97,6 @@
 			continue
 		limb.vital = FALSE
 		return
-
-/obj/item/weapon/zombie_claw
-	name = "claws"
-	hitsound = 'sound/weapons/slice.ogg'
-	icon_state = ""
-	force = 20
-	sharp = IS_SHARP_ITEM_BIG
-	edge = TRUE
-	attack_verb = list("clawed", "slashed", "torn", "ripped", "diced", "cut", "bit")
-	flags_item = NODROP|CAN_BUMP_ATTACK|DELONDROP
-	attack_speed = 8 //Same as unarmed delay
-	pry_capable = IS_PRY_CAPABLE_FORCE
-	///How much zombium are transferred per hit. Set to zero to remove transmission
-	var/zombium_per_hit = 5
-
-/obj/item/weapon/zombie_claw/melee_attack_chain(mob/user, atom/target, params, rightclick)
-	if(ishuman(target))
-		var/mob/living/carbon/human/human_target = target
-		if(human_target.stat == DEAD)
-			return
-		human_target.reagents.add_reagent(/datum/reagent/zombium, zombium_per_hit)
-	return ..()
-
-/obj/item/weapon/zombie_claw/afterattack(atom/target, mob/user, has_proximity, click_parameters)
-	. = ..()
-	if(!has_proximity)
-		return
-	if(!istype(target, /obj/machinery/door/airlock))
-		return
-	if(user.do_actions)
-		return
-
-	target.balloon_alert_to_viewers("[user] starts to open [target]", "You start to pry open [target]")
-	if(!do_after(user, 4 SECONDS, FALSE, target))
-		return
-	var/obj/machinery/door/airlock/door = target
-	playsound(user.loc, 'sound/effects/metal_creaking.ogg', 25, 1)
-	if(door.locked)
-		to_chat(user, span_warning("\The [target] is bolted down tight."))
-		return FALSE
-	if(door.welded)
-		to_chat(user, span_warning("\The [target] is welded shut."))
-		return FALSE
-	if(door.density) //Make sure it's still closed
-		door.open(TRUE)
 
 /datum/species/zombie/fast
 	name = "Fast zombie"
@@ -177,6 +134,14 @@
 	. = ..()
 	H.color = COLOR_MAROON
 
+/datum/species/zombie/psi_zombie
+	name = "Psi zombie" //reanimated by psionic ability
+	slowdown = -0.5
+	heal_rate = 20
+	total_health = 200
+	faction = FACTION_SECTOIDS
+	claw_type = /obj/item/weapon/zombie_claw/no_zombium
+
 /datum/action/rally_zombie
 	name = "Rally Zombies"
 	action_icon_state = "rally_minions"
@@ -186,7 +151,7 @@
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_AI_MINION_RALLY, owner)
 	var/datum/action/set_agressivity/set_agressivity = owner.actions_by_path[/datum/action/set_agressivity]
 	if(set_agressivity)
-		SEND_SIGNAL(owner, ESCORTING_ATOM_BEHAVIOUR_CHANGED, set_agressivity.zombies_agressive) //New escorting ais should have the same behaviour as old one
+		SEND_SIGNAL(owner, COMSIG_ESCORTING_ATOM_BEHAVIOUR_CHANGED, set_agressivity.zombies_agressive) //New escorting ais should have the same behaviour as old one
 
 /datum/action/set_agressivity
 	name = "Set other zombie behavior"
@@ -196,10 +161,61 @@
 
 /datum/action/set_agressivity/action_activate()
 	zombies_agressive = !zombies_agressive
-	SEND_SIGNAL(owner, ESCORTING_ATOM_BEHAVIOUR_CHANGED, zombies_agressive)
+	SEND_SIGNAL(owner, COMSIG_ESCORTING_ATOM_BEHAVIOUR_CHANGED, zombies_agressive)
 	update_button_icon()
 
 /datum/action/set_agressivity/update_button_icon()
-	button.overlays.Cut()
-	button.overlays += image('icons/mob/actions.dmi', button, zombies_agressive ? "minion_agressive" : "minion_passive")
+	action_icon_state = zombies_agressive ? "minion_agressive" : "minion_passive"
 	return ..()
+
+/obj/item/weapon/zombie_claw
+	name = "claws"
+	hitsound = 'sound/weapons/slice.ogg'
+	icon_state = ""
+	force = 20
+	sharp = IS_SHARP_ITEM_BIG
+	edge = TRUE
+	attack_verb = list("clawed", "slashed", "torn", "ripped", "diced", "cut", "bit")
+	flags_item = CAN_BUMP_ATTACK|DELONDROP
+	attack_speed = 8 //Same as unarmed delay
+	pry_capable = IS_PRY_CAPABLE_FORCE
+	///How much zombium are transferred per hit. Set to zero to remove transmission
+	var/zombium_per_hit = 5
+
+/obj/item/weapon/zombie_claw/Initialize(mapload)
+	. = ..()
+	ADD_TRAIT(src, TRAIT_NODROP, ABSTRACT_ITEM_TRAIT)
+
+/obj/item/weapon/zombie_claw/melee_attack_chain(mob/user, atom/target, params, rightclick)
+	if(ishuman(target))
+		var/mob/living/carbon/human/human_target = target
+		if(human_target.stat == DEAD)
+			return
+		human_target.reagents.add_reagent(/datum/reagent/zombium, zombium_per_hit)
+	return ..()
+
+/obj/item/weapon/zombie_claw/afterattack(atom/target, mob/user, has_proximity, click_parameters)
+	. = ..()
+	if(!has_proximity)
+		return
+	if(!istype(target, /obj/machinery/door/airlock))
+		return
+	if(user.do_actions)
+		return
+
+	target.balloon_alert_to_viewers("[user] starts to open [target]", "You start to pry open [target]")
+	if(!do_after(user, 4 SECONDS, IGNORE_HELD_ITEM, target))
+		return
+	var/obj/machinery/door/airlock/door = target
+	playsound(user.loc, 'sound/effects/metal_creaking.ogg', 25, 1)
+	if(door.locked)
+		to_chat(user, span_warning("\The [target] is bolted down tight."))
+		return FALSE
+	if(door.welded)
+		to_chat(user, span_warning("\The [target] is welded shut."))
+		return FALSE
+	if(door.density) //Make sure it's still closed
+		door.open(TRUE)
+
+/obj/item/weapon/zombie_claw/no_zombium
+	zombium_per_hit = 0

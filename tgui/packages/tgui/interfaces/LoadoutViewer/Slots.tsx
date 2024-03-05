@@ -1,22 +1,20 @@
-import { range } from "common/collections";
-import { resolveAsset } from "../../assets";
-import { useBackend } from "../../backend";
-import { Box, Button, Section, Stack, Flex } from "../../components";
-import { LoadoutSlotData, GridSpotKey, SLOTS, getGridSpotKey } from './Types';
+import { range } from 'common/collections';
+
+import { resolveAsset } from '../../assets';
+import { useBackend } from '../../backend';
+import { Box, Button, Flex, Section, Stack } from '../../components';
+import { getGridSpotKey, GridSpotKey, LoadoutSlotData, SLOTS } from './Types';
 
 const ROWS = 4;
 const COLUMNS = 3;
 
-const BUTTON_DIMENSION_WIDTH = "70px";
-const BUTTON_DIMENSION_HEIGHT = "70px";
+const BUTTON_DIMENSION_WIDTH = '70px';
+const BUTTON_DIMENSION_HEIGHT = '70px';
 
+export const SlotSelector = (props: LoadoutSlotData) => {
+  const { act } = useBackend();
 
-export const SlotSelector = (props: LoadoutSlotData, context) => {
-  const { act } = useBackend(context);
-
-  const {
-    items,
-  } = props;
+  const { items } = props;
 
   const gridSpots = new Map<GridSpotKey, string>();
 
@@ -27,13 +25,15 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
   return (
     <Section title="Slot Selector" textAlign="center">
       <Flex>
-        <Flex.Item grow={1}><div> </div></Flex.Item>
+        <Flex.Item grow={1}>
+          <div> </div>
+        </Flex.Item>
         <Flex.Item align="center">
           <Stack fill vertical>
-            {range(0, ROWS).map(row => (
+            {range(0, ROWS).map((row) => (
               <Stack.Item key={row}>
                 <Stack fill>
-                  {range(0, COLUMNS).map(column => {
+                  {range(0, COLUMNS).map((column) => {
                     const key = getGridSpotKey([row, column]);
                     const keyAtSpot = gridSpots.get(key);
                     const item = items[keyAtSpot!];
@@ -41,10 +41,9 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
 
                     let tooltip;
 
-                    if ("name" in item) {
+                    if ('name' in item) {
                       tooltip = item.name;
-                    }
-                    else {
+                    } else {
                       tooltip = slot.displayName;
                     }
 
@@ -58,14 +57,14 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
                       >
                         <Box
                           style={{
-                            position: "relative",
-                            width: "100%",
-                            height: "100%",
+                            position: 'relative',
+                            width: '100%',
+                            height: '100%',
                           }}
                         >
                           <Button
                             onClick={() => {
-                              act("selectSlot", {
+                              act('selectSlot', {
                                 key: keyAtSpot,
                               });
                             }}
@@ -77,22 +76,24 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
                                 src={resolveAsset(slot.image)}
                                 opacity={0.7}
                                 style={{
-                                  position: "absolute",
-                                  width: "65px",
-                                  height: "65px",
-                                  left: "50%",
-                                  top: "50%",
+                                  position: 'absolute',
+                                  width: '65px',
+                                  height: '65px',
+                                  left: '50%',
+                                  top: '50%',
                                   transform:
-                                    "translateX(-50%) translateY(-50%) scale(0.8)",
+                                    'translateX(-50%) translateY(-50%) scale(0.8)',
                                 }}
                               />
                             )}
-                            <Box style={{
-                              position: "relative",
-                              width: "60px",
-                              height: "60px",
-                            }}>
-                              {item.icons.map(iconinfo => (
+                            <Box
+                              style={{
+                                position: 'relative',
+                                width: '60px',
+                                height: '60px',
+                              }}
+                            >
+                              {item.icons.map((iconinfo) => (
                                 <Box
                                   key={iconinfo.icon}
                                   as="img"
@@ -102,12 +103,16 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
                                   width="100%"
                                   color="transparent"
                                   style={{
-                                    "position": "absolute",
-                                    "vertical-align": "middle",
+                                    position: 'absolute',
+                                    verticalAlign: 'middle',
                                     transform:
-                                      "translateX(" + iconinfo.translateX
-                                      + ") translateY(" + iconinfo.translateY
-                                      + ") scale(" + iconinfo.scale + ")",
+                                      'translateX(' +
+                                      iconinfo.translateX +
+                                      ') translateY(' +
+                                      iconinfo.translateY +
+                                      ') scale(' +
+                                      iconinfo.scale +
+                                      ')',
                                   }}
                                 />
                               ))}
@@ -122,7 +127,9 @@ export const SlotSelector = (props: LoadoutSlotData, context) => {
             ))}
           </Stack>
         </Flex.Item>
-        <Flex.Item grow={1}><div> </div></Flex.Item>
+        <Flex.Item grow={1}>
+          <div> </div>
+        </Flex.Item>
       </Flex>
     </Section>
   );

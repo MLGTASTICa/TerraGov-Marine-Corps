@@ -11,7 +11,7 @@
 /obj/effect/beam
 	name = "beam"
 	var/def_zone
-	flags_pass = PASSTABLE
+	allow_pass_flags = PASS_LOW_STRUCTURE
 
 
 /obj/effect/begin
@@ -37,43 +37,17 @@
 	desc = "This looks like a projection of something."
 	anchored = TRUE
 
-
-/obj/effect/shut_controller
-	name = "shut controller"
-	var/moving = null
-	var/list/parts = list(  )
-
-
-
-
-//Exhaust effect
-/obj/effect/engine_exhaust
-	name = "engine exhaust"
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "exhaust"
-	anchored = TRUE
-
-	New(var/turf/nloc, var/ndir, var/temp)
-		setDir(ndir)
-		..(nloc)
-
-		spawn(20)
-			loc = null
-
-
-
 /obj/effect/rune/attunement
 	luminosity = 5
 
 /obj/effect/soundplayer
 	anchored = TRUE
 	opacity = FALSE
-	density = TRUE
 	icon_state = "speaker"
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	var/datum/looping_sound/alarm_loop/deltalarm
 
-/obj/effect/soundplayer/Initialize()
+/obj/effect/soundplayer/Initialize(mapload)
 	. = ..()
 	deltalarm = new(null, FALSE)
 	GLOB.ship_alarms += src
@@ -92,7 +66,7 @@
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	resistance_flags = RESIST_ALL
 
-/obj/effect/forcefield/Initialize()
+/obj/effect/forcefield/Initialize(mapload)
 	. = ..()
 	if(icon_state == "blocker")
 		icon_state = ""
@@ -104,9 +78,9 @@
 	icon_state = "smoke"
 	opacity = TRUE
 
-/obj/effect/forcefield/fog/Initialize()
+/obj/effect/forcefield/fog/Initialize(mapload)
 	. = ..()
-	dir  = pick(CARDINAL_DIRS)
+	dir = pick(CARDINAL_DIRS)
 	GLOB.fog_blockers += src
 
 /obj/effect/forcefield/fog/Destroy()
@@ -119,7 +93,7 @@
 	return TRUE
 
 
-/obj/effect/forcefield/fog/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = 0, isrightclick = FALSE)
+/obj/effect/forcefield/fog/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = X.xeno_caste.melee_ap, isrightclick = FALSE)
 	return attack_hand(X)
 
 
@@ -147,10 +121,10 @@
 	density = FALSE
 	resistance_flags = RESIST_ALL|PROJECTILE_IMMUNE
 
-/obj/effect/forcefield/fog/passable_fog/Initialize()
+/obj/effect/forcefield/fog/passable_fog/Initialize(mapload)
 	. = ..()
 	var/static/list/connections = list(
-		COMSIG_ATOM_ENTERED = .proc/on_cross,
+		COMSIG_ATOM_ENTERED = PROC_REF(on_cross),
 	)
 	AddElement(/datum/element/connect_loc, connections)
 
@@ -165,7 +139,7 @@
 	set_opacity(FALSE)
 	alpha = 0
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-	addtimer(CALLBACK(src, .proc/reset), 30 SECONDS)
+	addtimer(CALLBACK(src, PROC_REF(reset)), 30 SECONDS)
 
 /obj/effect/forcefield/fog/passable_fog/proc/reset()
 	alpha = initial(alpha)
@@ -179,11 +153,16 @@
 	anchored = TRUE
 	resistance_flags = RESIST_ALL
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = list(SMOOTH_GROUP_AIRLOCK)
 
 /obj/effect/opacifier/Initialize(mapload, initial_opacity)
 	. = ..()
 	set_opacity(initial_opacity)
 
+/obj/effect/opacifier/Destroy()
+	. = ..()
+	QUEUE_SMOOTH_NEIGHBORS(loc)
 
 /obj/effect/supplypod_selector
 	icon_state = "supplypod_selector"
@@ -198,7 +177,7 @@
 	light_range = MINIMUM_USEFUL_LIGHT_RANGE
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	light_system = MOVABLE_LIGHT
-	blocks_emissive = NONE
+	blocks_emissive = EMISSIVE_BLOCK_NONE
 
 /obj/effect/dummy/lighting_obj/Initialize(mapload, _color, _range, _power, _duration)
 	. = ..()

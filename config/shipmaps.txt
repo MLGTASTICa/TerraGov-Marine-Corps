@@ -23,19 +23,14 @@ endmap
 map pillar_of_spring
 endmap
 
-map risingstar
-endmap
-
 map sulaco
 endmap
 
-map minerva
-endmap
-
-map twin_pillars
-	voteweight 0
+map arachne
 endmap
 
 map combat_patrol_base
-	voteweight 0
+endmap
+
+map iteron
 endmap

@@ -43,7 +43,7 @@
 	if(isxeno(pulledby))
 		if(adjustOxyLoss(HUMAN_CRITDRAG_OXYLOSS)) //take oxy damage per tile dragged
 			return
-		INVOKE_ASYNC(src, .proc/adjustBruteLoss, HUMAN_CRITDRAG_OXYLOSS)
+		INVOKE_ASYNC(src, PROC_REF(adjustBruteLoss), HUMAN_CRITDRAG_OXYLOSS)
 
 /mob/living/carbon/update_stat()
 	. = ..()
@@ -83,8 +83,8 @@
 	if(drowsyness)
 		adjustDrowsyness(-restingpwr)
 		blur_eyes(2)
-		if(prob(5))
-			Sleeping(20)
+		if(drowsyness > 18 && prob(5))
+			Sleeping(2 SECONDS)
 			Unconscious(10 SECONDS)
 
 	if(jitteriness)
@@ -100,13 +100,10 @@
 		handle_staminaloss()
 
 	if(IsSleeping())
-		if(ishuman(src))
-			var/mob/living/carbon/human/H = src
-			H.speech_problem_flag = 1
 		handle_dreams()
 		if(mind)
 			if((mind.active && client != null) || immune_to_ssd) //This also checks whether a client is connected, if not, sleep is not reduced.
-				AdjustSleeping(-20)
+				AdjustSleeping(-2 SECONDS)
 		if(!isxeno(src))
 			if(prob(2) && health && !hallucination)
 				emote("snore")
@@ -115,15 +112,15 @@
 		drunkenness = max(drunkenness - (drunkenness * 0.03), 0)
 		if(drunkenness >= 6)
 			if(prob(25))
-				slurring += 2
+				adjust_timed_status_effect(2 SECONDS, /datum/status_effect/speech/slurring/drunk)
 			jitter(-3)
 
-		if(drunkenness >= 11 && slurring < 5)
-			slurring += 1.2
+		if(drunkenness >= 11)
+			adjust_timed_status_effect(2 SECONDS, /datum/status_effect/speech/slurring/drunk, 10 SECONDS)
 
 		if(drunkenness >= 41)
 			if(prob(25))
-				AdjustConfused(40)
+				AdjustConfused(4 SECONDS)
 			if(dizziness < 450) // To avoid giving the player overly dizzy too
 				dizzy(8)
 
@@ -164,7 +161,6 @@
 		if(81 to INFINITY)
 			reagent_shock_modifier += PAIN_REDUCTION_HEAVY
 
-	handle_stagger()
 	handle_disabilities()
 
 /mob/living/carbon/proc/handle_impaired_vision()

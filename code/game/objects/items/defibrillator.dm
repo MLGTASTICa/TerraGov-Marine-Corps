@@ -1,6 +1,7 @@
 /obj/item/defibrillator
 	name = "emergency defibrillator"
 	desc = "A handheld emergency defibrillator, used to restore fibrillating patients. Can optionally bring people back from the dead."
+	icon = 'icons/obj/items/defibrillator.dmi'
 	icon_state = "defib_full"
 	item_state = "defib"
 	flags_atom = CONDUCT
@@ -11,6 +12,8 @@
 	w_class = WEIGHT_CLASS_NORMAL
 
 	var/ready = FALSE
+	///wether readying is needed
+	var/ready_needed = TRUE
 	var/damage_threshold = 8 //This is the maximum non-oxy damage the defibrillator will heal to get a patient above -100, in all categories
 	var/charge_cost = 66 //How much energy is used.
 	var/obj/item/cell/dcell = null
@@ -23,7 +26,7 @@
 	return (FIRELOSS)
 
 
-/obj/item/defibrillator/Initialize()
+/obj/item/defibrillator/Initialize(mapload)
 	. = ..()
 	sparks = new
 	sparks.set_up(5, 0, src)
@@ -35,12 +38,13 @@
 /obj/item/defibrillator/Destroy()
 	QDEL_NULL(sparks)
 	if(dcell)
-		UnregisterSignal(dcell, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(dcell, COMSIG_QDELETING)
 		QDEL_NULL(dcell)
 	return ..()
 
 
-/obj/item/defibrillator/update_icon()
+/obj/item/defibrillator/update_icon_state()
+	. = ..()
 	icon_state = "defib"
 	if(ready)
 		icon_state += "_out"
@@ -81,17 +85,19 @@
 
 
 /obj/item/defibrillator/attack_self(mob/living/carbon/human/user)
+	if(!ready_needed)
+		return
 	if(!istype(user))
 		return
 	if(defib_cooldown > world.time)
 		return
 
 	//Job knowledge requirement
-	var/skill = user.skills.getRating("medical")
+	var/skill = user.skills.getRating(SKILL_MEDICAL)
 	if(skill < SKILL_MEDICAL_PRACTICED)
 		user.visible_message(span_notice("[user] fumbles around figuring out how to use [src]."),
 		span_notice("You fumble around figuring out how to use [src]."))
-		if(!do_after(user, SKILL_TASK_AVERAGE - (SKILL_TASK_VERY_EASY * skill), TRUE, src, BUSY_ICON_UNSKILLED)) // 3 seconds with medical skill, 5 without
+		if(!do_after(user, SKILL_TASK_AVERAGE - (SKILL_TASK_VERY_EASY * skill), NONE, src, BUSY_ICON_UNSKILLED)) // 3 seconds with medical skill, 5 without
 			return
 
 	defib_cooldown = world.time + 2 SECONDS
@@ -99,16 +105,20 @@
 	user.visible_message(span_notice("[user] turns [src] [ready? "on and opens the cover" : "off and closes the cover"]."),
 	span_notice("You turn [src] [ready? "on and open the cover" : "off and close the cover"]."))
 	playsound(get_turf(src), "sparks", 25, TRUE, 4)
+	if(ready)
+		playsound(get_turf(src), 'sound/items/defib_safetyOn.ogg', 30, 0)
+	else
+		playsound(get_turf(src), 'sound/items/defib_safetyOff.ogg', 30, 0)
 	update_icon()
 
 
 ///Wrapper to guarantee powercells are properly nulled and avoid hard deletes.
 /obj/item/defibrillator/proc/set_dcell(obj/item/cell/new_cell)
 	if(dcell)
-		UnregisterSignal(dcell, COMSIG_PARENT_QDELETING)
+		UnregisterSignal(dcell, COMSIG_QDELETING)
 	dcell = new_cell
 	if(dcell)
-		RegisterSignal(dcell, COMSIG_PARENT_QDELETING, .proc/on_cell_deletion)
+		RegisterSignal(dcell, COMSIG_QDELETING, PROC_REF(on_cell_deletion))
 
 
 ///Called by the deletion of the referenced powercell.
@@ -117,8 +127,7 @@
 	stack_trace("Powercell deleted while powering the defib, this isn't supposed to happen normally.")
 	set_dcell(null)
 
-
-/mob/living/proc/get_ghost()
+/mob/living/proc/get_ghost(bypass_client_check = FALSE)
 	if(client) //Let's call up the correct ghost!
 		return null
 	for(var/mob/dead/observer/ghost AS in GLOB.observer_list)
@@ -128,10 +137,9 @@
 			continue
 		if(ghost.can_reenter_corpse.resolve() != src)
 			continue
-		if(ghost.client)
+		if(ghost.client || bypass_client_check)
 			return ghost
 	return null
-
 
 /mob/living/carbon/human/proc/has_working_organs()
 	var/datum/internal_organ/heart/heart = internal_organs_by_name["heart"]
@@ -142,6 +150,10 @@
 	return TRUE
 
 /obj/item/defibrillator/attack(mob/living/carbon/human/H, mob/living/carbon/human/user)
+	defibrillate(H,user)
+
+///Split proc that actually does the defibrillation. Separated to be used more easily by medical gloves
+/obj/item/defibrillator/proc/defibrillate(mob/living/carbon/human/H, mob/living/carbon/human/user)
 	if(user.do_actions) //Currently deffibing
 		return
 
@@ -153,12 +165,12 @@
 	var/defib_heal_amt = damage_threshold
 
 	//job knowledge requirement
-	var/skill = user.skills.getRating("medical")
+	var/skill = user.skills.getRating(SKILL_MEDICAL)
 	if(skill < SKILL_MEDICAL_PRACTICED)
 		user.visible_message(span_notice("[user] fumbles around figuring out how to use [src]."),
 		span_notice("You fumble around figuring out how to use [src]."))
 		var/fumbling_time = SKILL_TASK_AVERAGE - (SKILL_TASK_VERY_EASY * skill) // 3 seconds with medical skill, 5 without
-		if(!do_after(user, fumbling_time, TRUE, H, BUSY_ICON_UNSKILLED))
+		if(!do_after(user, fumbling_time, NONE, H, BUSY_ICON_UNSKILLED))
 			return
 	else
 		defib_heal_amt *= skill * 0.5 //more healing power when used by a doctor (this means non-trained don't heal)
@@ -190,18 +202,21 @@
 		return
 
 	var/mob/dead/observer/G = H.get_ghost()
-	if(istype(G))
-		notify_ghost(G, "<font size=3>Someone is trying to revive your body. Return to it if you want to be resurrected!</font>", ghost_sound = 'sound/effects/gladosmarinerevive.ogg', enter_text = "Enter", enter_link = "reentercorpse=1", source = H, action = NOTIFY_JUMP)
-	else if(!H.client)
+	if(G)
+		G.reenter_corpse()
+	else if(!H.mind && !H.get_ghost(TRUE))
 		//We couldn't find a suitable ghost, this means the person is not returning
 		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Patient has a DNR."))
+		return
+	else if(!H.client) //Currently disconnected.
+		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Patient's soul has almost departed. Please try again."))
 		return
 
 	user.visible_message(span_notice("[user] starts setting up the paddles on [H]'s chest."),
 	span_notice("You start setting up the paddles on [H]'s chest."))
 	playsound(get_turf(src),'sound/items/defib_charge.ogg', 25, 0) //Do NOT vary this tune, it needs to be precisely 7 seconds
 
-	if(!do_mob(user, H, 7 SECONDS, BUSY_ICON_FRIENDLY, BUSY_ICON_MEDICAL))
+	if(!do_after(user, 7 SECONDS, NONE, H, BUSY_ICON_FRIENDLY, BUSY_ICON_MEDICAL))
 		user.visible_message(span_warning("[user] stops setting up the paddles on [H]'s chest."),
 		span_warning("You stop setting up the paddles on [H]'s chest."))
 		return
@@ -222,9 +237,9 @@
 
 	var/datum/internal_organ/heart/heart = H.internal_organs_by_name["heart"]
 	if(!issynth(H) && !isrobot(H) && heart && prob(25))
-		heart.take_damage(5) //Allow the defibrilator to possibly worsen heart damage. Still rare enough to just be the "clone damage" of the defib
+		heart.take_damage(5) //Allow the defibrillator to possibly worsen heart damage. Still rare enough to just be the "clone damage" of the defib
 
-	if((HAS_TRAIT(H, TRAIT_UNDEFIBBABLE ) && !issynth(H)) || H.suiciding) //synthetic species have no expiration date
+	if(HAS_TRAIT(H, TRAIT_UNDEFIBBABLE) || H.suiciding)
 		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Patient's brain has decayed too much. No remedy possible."))
 		return
 
@@ -238,35 +253,52 @@
 			user.visible_message("[icon2html(src, viewers(user))] \The [src] buzzes: Positronic brain missing, cannot reboot.")
 			return
 
-	if(!H.client) //Freak case, no client at all. This is a braindead mob (like a colonist)
+	if(!H.client) //Either client disconnected after being dragged in, ghosted, or this mob isn't a player (but that is caught way earlier).
 		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: No soul detected, Attempting to revive..."))
 
-	if(H.mind && !H.client) //Let's call up the correct ghost! Also, bodies with clients only, thank you.
-		G = H.get_ghost()
+	if(!H.mind) //Check if their ghost still exists if they aren't in their body.
+		G = H.get_ghost(TRUE)
 		if(istype(G))
 			user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Defibrillation failed. Patient's soul has almost departed, please try again."))
 			return
-		//We couldn't find a suitable ghost, this means the person is not returning
+		//No mind and no associated ghost exists. This one is DNR.
 		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Patient has a DNR."))
 		return
 
-	if(!H.client) //Freak case, no client at all. This is a braindead mob (like a colonist)
-		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Defibrillation failed. No soul detected."))
+	if(!H.client) //No client, but has a mind. This means the player was in their body, but potentially disconnected.
+		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Defibrillation failed. No soul detected. Please try again."))
+		playsound(get_turf(src), 'sound/items/defib_failed.ogg', 35, 0)
 		return
 
 	//At this point, the defibrillator is ready to work
-	if(!issynth(H))
+	if(HAS_TRAIT(H, TRAIT_IMMEDIATE_DEFIB)) // this trait ignores user skill for the heal amount
+		H.setOxyLoss(0)
+		H.updatehealth()
+
+		var/heal_target = H.get_death_threshold() - H.health + 1
+		var/all_loss = H.getBruteLoss() + H.getFireLoss() + H.getToxLoss()
+		if(all_loss && (heal_target > 0))
+			var/brute_ratio = H.getBruteLoss() / all_loss
+			var/burn_ratio = H.getFireLoss() / all_loss
+			var/tox_ratio = H.getToxLoss() / all_loss
+			if(tox_ratio)
+				H.adjustToxLoss(-(tox_ratio * heal_target))
+			H.heal_overall_damage(brute_ratio*heal_target, burn_ratio*heal_target, TRUE) // explicitly also heals robit parts
+
+	else if(!issynth(H)) // TODO make me a trait :)
 		H.adjustBruteLoss(-defib_heal_amt)
 		H.adjustFireLoss(-defib_heal_amt)
 		H.adjustToxLoss(-defib_heal_amt)
-		H.adjustOxyLoss(-H.getOxyLoss())
-		H.updatehealth() //Needed for the check to register properly
+		H.setOxyLoss(0)
 
+	H.updatehealth() //Make sure health is up to date since it's a purely derived value
 	if(H.health <= H.get_death_threshold())
 		user.visible_message(span_warning("[icon2html(src, viewers(user))] \The [src] buzzes: Defibrillation failed. Vital signs are too weak, repair damage and try again."))
+		playsound(get_turf(src), 'sound/items/defib_failed.ogg', 35, 0)
 		return
 
 	user.visible_message(span_notice("[icon2html(src, viewers(user))] \The [src] beeps: Defibrillation successful."))
+	playsound(get_turf(src), 'sound/items/defib_success.ogg', 35, 0)
 	H.set_stat(UNCONSCIOUS)
 	H.emote("gasp")
 	H.chestburst = 0 //reset our chestburst state
@@ -274,11 +306,22 @@
 	H.reload_fullscreens()
 	H.flash_act()
 	H.apply_effect(10, EYE_BLUR)
-	H.apply_effect(10, PARALYZE)
+	H.apply_effect(20 SECONDS, PARALYZE)
 	H.handle_regular_hud_updates()
 	H.updatehealth() //One more time, so it doesn't show the target as dead on HUDs
 	H.dead_ticks = 0 //We reset the DNR time
+
+	//Checks if our "patient" is wearing a camera. Then it turns it on if it's off.
+	if(istype(H.wear_ear, /obj/item/radio/headset/mainship))
+		var/obj/item/radio/headset/mainship/cam_headset = H.wear_ear
+		if(!(cam_headset?.camera?.status))
+			cam_headset.camera.toggle_cam(null, FALSE)
+
 	REMOVE_TRAIT(H, TRAIT_PSY_DRAINED, TRAIT_PSY_DRAINED)
+	if(user.client)
+		var/datum/personal_statistics/personal_statistics = GLOB.personal_statistics_list[user.ckey]
+		personal_statistics.revives++
+		personal_statistics.mission_revives++
 	GLOB.round_statistics.total_human_revives[H.faction]++
 	SSblackbox.record_feedback("tally", "round_statistics", 1, "total_human_revives[H.faction]")
 	to_chat(H, span_notice("You suddenly feel a spark and your consciousness returns, dragging you back to the mortal plane."))
@@ -294,3 +337,75 @@
 	desc = "A handheld emergency defibrillator, used to restore fibrillating patients. Can optionally bring people back from the dead. Appears to be a civillian model."
 	icon_state = "civ_defib_full"
 	item_state = "defib"
+
+/obj/item/defibrillator/internal
+	icon = 'icons/obj/clothing/gloves.dmi' //even though you'll never see this directly, it shows up in the chat panel due to icon2html
+	ready = TRUE
+	ready_needed = FALSE
+	///Parent item containing this defib
+	var/obj/parent_obj
+
+/obj/item/defibrillator/internal/Initialize(mapload, obj/new_parent)
+	if(!istype(new_parent))
+		return INITIALIZE_HINT_QDEL
+	parent_obj = new_parent
+	return ..()
+
+/obj/item/defibrillator/internal/Destroy()
+	parent_obj = null
+	return ..()
+
+/obj/item/defibrillator/internal/update_icon()
+	. = ..()
+	parent_obj.update_icon()
+
+/obj/item/clothing/gloves/defibrillator
+	name = "advanced medical combat gloves"
+	desc = "Advanced medical gloves, these include small electrodes to defibrilate a patiant. No more bulky units!"
+	icon_state = "defib_out_full"
+	item_state = "defib_gloves"
+	soft_armor = list(MELEE = 25, BULLET = 15, LASER = 10, ENERGY = 15, BOMB = 15, BIO = 5, FIRE = 15, ACID = 15)
+	flags_cold_protection = HANDS
+	flags_heat_protection = HANDS
+	min_cold_protection_temperature = GLOVES_MIN_COLD_PROTECTION_TEMPERATURE
+	max_heat_protection_temperature = GLOVES_MAX_HEAT_PROTECTION_TEMPERATURE
+	///The internal defib item
+	var/obj/item/defibrillator/internal/internal_defib
+
+/obj/item/clothing/gloves/defibrillator/Initialize(mapload)
+	. = ..()
+	internal_defib = new(src, src)
+	update_icon()
+
+/obj/item/clothing/gloves/defibrillator/Destroy()
+	internal_defib = null
+	return ..()
+
+/obj/item/clothing/gloves/defibrillator/equipped(mob/living/carbon/human/user, slot)
+	. = ..()
+	if(user.gloves == src)
+		RegisterSignal(user, COMSIG_HUMAN_MELEE_UNARMED_ATTACK, PROC_REF(on_unarmed_attack))
+	else
+		UnregisterSignal(user, COMSIG_HUMAN_MELEE_UNARMED_ATTACK)
+
+/obj/item/clothing/gloves/defibrillator/unequipped(mob/living/carbon/human/user, slot)
+	. = ..()
+	UnregisterSignal(user, COMSIG_HUMAN_MELEE_UNARMED_ATTACK) //Unregisters in the case of getting delimbed
+
+/obj/item/clothing/gloves/defibrillator/examine(mob/user)
+	. = ..()
+	. += internal_defib.maybe_message_recharge_hint()
+
+/obj/item/clothing/gloves/defibrillator/update_icon_state()
+	. = ..()
+	if(!internal_defib) //should only happen on init
+		return
+	icon_state = internal_defib.icon_state
+
+//when you are wearing these gloves, this will call the normal attack code to begin defibing the target
+/obj/item/clothing/gloves/defibrillator/proc/on_unarmed_attack(mob/living/carbon/human/user, mob/living/carbon/human/target)
+	SIGNAL_HANDLER
+	if(user.a_intent != INTENT_HELP)
+		return
+	if(istype(user) && istype(target))
+		INVOKE_ASYNC(internal_defib, TYPE_PROC_REF(/obj/item/defibrillator, defibrillate), target, user)

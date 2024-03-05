@@ -226,27 +226,12 @@
 /obj/machinery/light,
 /turf/open/floor/tile/dark,
 /area/bigredv2/outside/admin_building)
-"jv" = (
-/obj/structure/window/framed/colony/reinforced,
-/obj/machinery/door/poddoor/shutters/mainship{
-	id = "Operations";
-	name = "\improper Operations Shutters"
-	},
-/turf/closed/wall/r_wall,
-/area/bigredv2/outside/admin_building)
 "jz" = (
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/simple/green/hidden{
 	dir = 4
 	},
 /turf/open/floor/tile/dark,
-/area/bigredv2/outside/admin_building)
-"jQ" = (
-/obj/machinery/power/apc{
-	dir = 4
-	},
-/obj/structure/cable,
-/turf/open/floor/tile/white,
 /area/bigredv2/outside/admin_building)
 "jZ" = (
 /obj/effect/landmark/weed_node,
@@ -260,6 +245,16 @@
 "kX" = (
 /obj/structure/flora/ausbushes/brflowers,
 /obj/structure/flora/ausbushes/ywflowers,
+/obj/structure/window/reinforced{
+	dir = 1
+	},
+/obj/structure/window/reinforced,
+/obj/structure/window/reinforced/windowstake{
+	dir = 4
+	},
+/obj/structure/window/reinforced/windowstake{
+	dir = 8
+	},
 /turf/open/ground/jungle/clear,
 /area/bigredv2/outside/admin_building)
 "la" = (
@@ -322,7 +317,6 @@
 /turf/closed/wall/r_wall,
 /area/bigredv2/outside/admin_building)
 "nO" = (
-/obj/structure/window/reinforced,
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/simple/green/hidden{
 	dir = 4
@@ -438,9 +432,6 @@
 /turf/open/floor/tile/dark/blue2,
 /area/bigredv2/outside/admin_building)
 "sx" = (
-/obj/structure/window/reinforced{
-	dir = 8
-	},
 /obj/effect/ai_node,
 /turf/open/floor/grimy,
 /area/bigredv2/outside/admin_building)
@@ -546,7 +537,7 @@
 	},
 /area/bigredv2/outside/admin_building)
 "wi" = (
-/obj/machinery/computer/communications,
+/obj/effect/spawner/random/machinery/random_broken_computer/small/comms,
 /obj/structure/table,
 /turf/open/floor/tile/dark,
 /area/bigredv2/outside/admin_building)
@@ -568,7 +559,7 @@
 /turf/open/floor/tile/dark/blue2/corner,
 /area/bigredv2/outside/admin_building)
 "xM" = (
-/obj/machinery/computer/nuke_disk_generator/green,
+/obj/structure/nuke_disk_candidate,
 /turf/open/floor/tile/dark/blue2,
 /area/bigredv2/outside/admin_building)
 "xT" = (
@@ -708,12 +699,6 @@
 /obj/effect/landmark/weed_node,
 /turf/open/floor/wood,
 /area/bigredv2/outside/admin_building)
-"Ed" = (
-/obj/structure/window/reinforced{
-	dir = 1
-	},
-/turf/open/floor/grimy,
-/area/bigredv2/outside/admin_building)
 "Eg" = (
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/manifold/green/hidden{
@@ -756,7 +741,7 @@
 /turf/open/floor/tile/dark,
 /area/bigredv2/outside/admin_building)
 "FS" = (
-/obj/structure/window/framed/colony/reinforced,
+/obj/effect/spawner/random/misc/structure/broken_reinforced_window/colonyspawn,
 /obj/machinery/door/poddoor/shutters/mainship{
 	id = "Operations";
 	name = "\improper Operations Shutters"
@@ -789,13 +774,13 @@
 /area/bigredv2/outside/admin_building)
 "GM" = (
 /obj/structure/table,
-/obj/machinery/computer/communications,
+/obj/effect/spawner/random/machinery/random_broken_computer/small/comms,
 /turf/open/floor/tile/dark/blue2{
 	dir = 6
 	},
 /area/bigredv2/outside/admin_building)
 "GX" = (
-/obj/machinery/alarm{
+/obj/machinery/air_alarm{
 	dir = 1
 	},
 /obj/structure/cable,
@@ -837,7 +822,7 @@
 "Ir" = (
 /obj/structure/table,
 /obj/item/tool/pen/red,
-/obj/structure/paper_bin,
+/obj/effect/spawner/random/misc/paperbin,
 /turf/open/floor/tile/white,
 /area/bigredv2/outside/admin_building)
 "IN" = (
@@ -1060,7 +1045,6 @@
 /area/bigredv2/outside/admin_building)
 "OE" = (
 /obj/structure/cable,
-/obj/structure/cable,
 /obj/machinery/atmospherics/pipe/simple/green/hidden{
 	dir = 4
 	},
@@ -1214,7 +1198,7 @@
 /area/bigredv2/outside/admin_building)
 "UL" = (
 /obj/structure/table/woodentable,
-/obj/structure/paper_bin,
+/obj/effect/spawner/random/misc/paperbin,
 /obj/item/tool/pen,
 /obj/machinery/light,
 /turf/open/floor/wood,
@@ -1225,7 +1209,7 @@
 /area/bigredv2/outside/admin_building)
 "Va" = (
 /obj/structure/table,
-/obj/structure/paper_bin,
+/obj/effect/spawner/random/misc/paperbin,
 /obj/item/tool/pen,
 /obj/machinery/light,
 /turf/open/floor/tile/dark/blue2,
@@ -1264,7 +1248,7 @@
 /turf/open/floor/grimy,
 /area/bigredv2/outside/admin_building)
 "Yi" = (
-/obj/structure/window/framed/colony/reinforced,
+/obj/effect/spawner/random/misc/structure/broken_reinforced_window/colonyspawn,
 /obj/machinery/door/poddoor/shutters/mainship{
 	dir = 2;
 	id = "Operations";
@@ -1287,13 +1271,6 @@
 	dir = 1
 	},
 /area/bigredv2/outside/c)
-"YF" = (
-/obj/structure/window/reinforced{
-	dir = 4
-	},
-/obj/effect/landmark/weed_node,
-/turf/open/floor/grimy,
-/area/bigredv2/outside/admin_building)
 "YR" = (
 /obj/machinery/computer3/server,
 /turf/open/floor/tile/dark,
@@ -1438,7 +1415,7 @@ KC
 eA
 XS
 Lf
-YF
+sE
 CU
 ca
 ep
@@ -1465,7 +1442,7 @@ ad
 CU
 nO
 kX
-Ed
+CU
 rM
 ep
 nt
@@ -1689,7 +1666,7 @@ XA
 jz
 xT
 ye
-jQ
+VB
 VB
 nH
 "}
@@ -2071,8 +2048,8 @@ FS
 nH
 nH
 nH
-jv
-jv
+FS
+FS
 FS
 FS
 nH

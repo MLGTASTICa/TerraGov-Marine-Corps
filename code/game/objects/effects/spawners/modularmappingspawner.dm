@@ -79,10 +79,10 @@
 	spawner_width = 22
 
 /************BIG RED******/
-/obj/effect/spawner/modularmap/bigred/operations //todo decrease y by one
+/obj/effect/spawner/modularmap/bigred/operations
 	mapid = "broperations"
 	spawner_width = 29
-	spawner_height = 25
+	spawner_height = 24
 
 /obj/effect/spawner/modularmap/bigred/fence
 	mapid = "brfence"
@@ -224,15 +224,16 @@
 	spawner_width = 54
 	spawner_height = 22
 
-/obj/effect/spawner/modularmap/bigred/landingzonetwo
-	mapid = "brlz2"
-	spawner_width = 43
-	spawner_height = 38
+/************OSCAR OUTPOST**********/
+/obj/effect/spawner/modularmap/oscaroutposttophalf
+	mapid = "oscartop"
+	spawner_width = 150
+	spawner_height = 153
 
-/obj/effect/spawner/modularmap/bigred/landingzoneone
-	mapid = "brlz1"
-	spawner_width = 85
-	spawner_height = 38
+/obj/effect/spawner/modularmap/oscaroutpostbase
+	mapid = "oscarbase"
+	spawner_width = 79
+	spawner_height = 29
 
 /************EORG**********/
 /obj/effect/spawner/modularmap/admin/eorg

@@ -7,7 +7,7 @@
 
 	density = TRUE
 	max_integrity = 300
-	soft_armor = list("melee" = 0, "bullet" = 0, "laser" = 0, "energy" = 100, "bomb" = 0, "bio" = 100, "rad" = 100, "fire" = 80, "acid" = 30)
+	soft_armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 100, BOMB = 0, BIO = 100, FIRE = 80, ACID = 30)
 	layer = OBJ_LAYER
 
 	pipe_flags = PIPING_ONE_PER_TURF | PIPING_DEFAULT_LAYER_ONLY
@@ -35,7 +35,8 @@
 		B += M.rating
 	heat_capacity = 5000 * ((B - 1) ** 2)
 
-/obj/machinery/atmospherics/components/unary/thermomachine/update_icon()
+/obj/machinery/atmospherics/components/unary/thermomachine/update_icon_state()
+	. = ..()
 	if(CHECK_BITFIELD(machine_stat, PANEL_OPEN))
 		icon_state = icon_state_open
 	else if(on && is_operational())

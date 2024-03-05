@@ -13,20 +13,17 @@
 //Force the config directory to be something other than "config"
 #define OVERRIDE_CONFIG_DIRECTORY_PARAMETER "config-directory"
 
-// Consider these images/atoms as part of the UI/HUD
-#define APPEARANCE_UI_IGNORE_ALPHA (RESET_COLOR|RESET_TRANSFORM|NO_CLIENT_COLOR|RESET_ALPHA|PIXEL_SCALE)
-#define APPEARANCE_UI (RESET_COLOR|RESET_TRANSFORM|NO_CLIENT_COLOR|PIXEL_SCALE)
-#define APPEARANCE_UI_TRANSFORM (RESET_COLOR|NO_CLIENT_COLOR|RESET_ALPHA|PIXEL_SCALE)
-
-//Just space
-#define SPACE_ICON_STATE "[((x + y) ^ ~(x * y) + z) % 25]"
-
 //dirt type for each turf types.
 #define NO_DIRT 0
 #define DIRT_TYPE_GROUND 1
 #define DIRT_TYPE_MARS 2
 #define DIRT_TYPE_SNOW 3
 #define DIRT_TYPE_LAVALAND 4
+
+///How many variations of bullethole patterns there are
+#define BULLETHOLE_STATES 10
+///Maximum possible bullet holes in a closed turf
+#define BULLETHOLE_MAX 24 
 
 //wet floors
 
@@ -38,13 +35,13 @@
 #define SHOES_TIED 1
 #define SHOES_KNOTTED 2
 
-//subtypesof(), typesof() without the parent path
-#define subtypesof(typepath) ( typesof(typepath) - typepath )
-
 #define RESIZE_DEFAULT_SIZE 1
 
 GLOBAL_VAR_INIT(global_unique_id, 1)
 #define UNIQUEID (GLOB.global_unique_id++)
+
+///The icon_state for space.  There is 25 total icon states that vary based on the x/y/z position of the turf
+#define SPACE_ICON_STATE(x, y, z) "[((x + y) ^ ~(x * y) + z) % 25]"
 
 // Maploader bounds indices
 #define MAP_MINX 1
@@ -109,7 +106,6 @@ GLOBAL_VAR_INIT(global_unique_id, 1)
 //for obj explosion block calculation
 #define EXPLOSION_BLOCK_PROC -1
 
-
 //Luma coefficients suggested for HDTVs. If you change these, make sure they add up to 1.
 #define LUMA_R 0.213
 #define LUMA_G 0.715
@@ -117,7 +113,7 @@ GLOBAL_VAR_INIT(global_unique_id, 1)
 
 #define NULL_CLIENT_BUG_CHECK 1
 #ifdef NULL_CLIENT_BUG_CHECK
-#define CHECK_NULL_CLIENT(X) if(QDELETED(X) { return; }
+#define CHECK_NULL_CLIENT(X) if(QDELETED(X)) { return; }
 #else
 #define CHECK_NULL_CLIENT(X) X
 #endif
@@ -137,4 +133,8 @@ GLOBAL_VAR_INIT(global_unique_id, 1)
 #define LIGHT_BROKEN 2
 #define LIGHT_BURNED 3
 
-GLOBAL_VAR_INIT(geothermal_generator_ammount, 0)
+//Actually better performant than reverse_direction()
+#define REVERSE_DIR(dir) ( ((dir & 85) << 1) | ((dir & 170) >> 1) )
+
+// shorter way to write as anything
+#define AS as anything

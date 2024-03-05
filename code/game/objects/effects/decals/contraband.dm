@@ -25,7 +25,7 @@
 
 //############################## THE ACTUAL DECALS ###########################
 
-obj/structure/sign/poster
+/obj/structure/sign/poster
 	name = "poster"
 	desc = "A large piece of space-resistant printed paper. "
 	icon = 'icons/obj/contraband.dmi'
@@ -46,7 +46,7 @@ obj/structure/sign/poster
 		if(WEST)
 			pixel_x = -30
 
-obj/structure/sign/poster/New(var/serial)
+/obj/structure/sign/poster/New(serial)
 
 	serial_number = serial
 
@@ -62,6 +62,8 @@ obj/structure/sign/poster/New(var/serial)
 
 /obj/structure/sign/poster/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 	if(iswirecutter(I))
 		playsound(loc, 'sound/items/wirecutter.ogg', 25, 1)
 		if(ruined)
@@ -127,7 +129,7 @@ obj/structure/sign/poster/New(var/serial)
 	qdel(P)	//delete it now to cut down on sanity checks afterwards. Agouri's code supports rerolling it anyway
 	playsound(D.loc, 'sound/items/poster_being_created.ogg', 25, 1)
 
-	sleep(17)
+	sleep(1.7 SECONDS)
 	if(!D)	return
 
 	if(istype(src,/turf/closed/wall) && user && user.loc == temp_loc)//Let's check if everything is still there

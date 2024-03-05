@@ -437,7 +437,8 @@
 			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_LOOC]'><font color='[(muted & MUTE_LOOC) ? "#ff5e5e" : "white"]'>LOOC</font></a> |
 			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_PRAY]'><font color='[(muted & MUTE_PRAY) ? "#ff5e5e" : "white"]'>PRAY</font></a> |
 			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_ADMINHELP]'><font color='[(muted & MUTE_ADMINHELP) ? "#ff5e5e" : "white"]'>ADMINHELP</font></a> |
-			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_DEADCHAT]'><font color='[(muted & MUTE_DEADCHAT) ? "#ff5e5e" : "white"]'>DEADCHAT</font></a>
+			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_DEADCHAT]'><font color='[(muted & MUTE_DEADCHAT) ? "#ff5e5e" : "white"]'>DEADCHAT</font></a> |
+			<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_TTS]'><font color='[(muted & MUTE_TTS) ? "#ff5e5e" : "white"]'>TEXT TO SPEECH</font></a>
 			(<a href='?src=[ref];mute=[REF(M)];mute_type=[MUTE_ALL]'><font color='[(muted & MUTE_ALL) ? "#ff5e5e" : "white"]'>ALL</font></a>)
 		"}
 
@@ -463,6 +464,7 @@
 		<a href='?src=[ref];transform=early_synth;mob=[REF(M)]'>Early_Synth</a> |
 		<a href='?src=[ref];transform=vatborn;mob=[REF(M)]'>Vatborn</a> |
 		<a href='?src=[ref];transform=vatgrown;mob=[REF(M)]'>Vatgrown</a> |
+		<a href='?src=[ref];transform=combat_robot;mob=[REF(M)]'>Combat_Robot</a> |
 		<a href='?src=[ref];transform=monkey;mob=[REF(M)]'>Monkey</a> |
 		<a href='?src=[ref];transform=moth;mob=[REF(M)]'>Moth</a> |
 		<a href='?src=[ref];transform=zombie;mob=[REF(M)]'>Zombie</a> |
@@ -473,6 +475,7 @@
 		<a href='?src=[ref];transform=drone;mob=[REF(M)]'>Drone</a> |
 		<a href='?src=[ref];transform=sentinel;mob=[REF(M)]'>Sentinel</a> |
 		<a href='?src=[ref];transform=defender;mob=[REF(M)]'>Defender</a> |
+		<a href='?src=[ref];transform=baneling;mob=[REF(M)]'>Baneling</a> |
 		<br> Alien Tier 2:
 		<a href='?src=[ref];transform=hunter;mob=[REF(M)]'>Hunter</a> |
 		<a href='?src=[ref];transform=bull;mob=[REF(M)]'>Bull</a> |
@@ -480,13 +483,18 @@
 		<a href='?src=[ref];transform=spitter;mob=[REF(M)]'>Spitter</a> |
 		<a href='?src=[ref];transform=hivelord;mob=[REF(M)]'>Hivelord</a> |
 		<a href='?src=[ref];transform=carrier;mob=[REF(M)]'>Carrier</a> |
-		<a href='?src=[ref];transform=wraith;mob=[REF(M)]'>Wraith</a>
+		<a href='?src=[ref];transform=wraith;mob=[REF(M)]'>Wraith</a> |
+		<a href='?src=[ref];transform=puppeteer;mob=[REF(M)]'>Puppeteer</a> |
 		<br> Alien Tier 3:
 		<a href='?src=[ref];transform=ravager;mob=[REF(M)]'>Ravager</a> |
+		<a href='?src=[ref];transform=widow;mob=[REF(M)]'>Widow</a> |
 		<a href='?src=[ref];transform=praetorian;mob=[REF(M)]'>Praetorian</a> |
 		<a href='?src=[ref];transform=boiler;mob=[REF(M)]'>Boiler</a> |
 		<a href='?src=[ref];transform=defiler;mob=[REF(M)]'>Defiler</a> |
 		<a href='?src=[ref];transform=crusher;mob=[REF(M)]'>Crusher</a>
+		<a href='?src=[ref];transform=gorger;mob=[REF(M)]'>Gorger</a>
+		<a href='?src=[ref];transform=warlock;mob=[REF(M)]'>Warlock</a>
+		<a href='?src=[ref];transform=behemoth;mob=[REF(M)]'>Behemoth</a>
 		<br> Alien Tier 4:
 		<a href='?src=[ref];transform=queen;mob=[REF(M)]'>Queen</a> |
 		<a href='?src=[ref];transform=shrike;mob=[REF(M)]'>Shrike</a> |

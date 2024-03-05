@@ -2,6 +2,7 @@
 #define IGNORE_WEED_REMOVAL (1<<0)
 #define HAS_OVERLAY (1<<1)
 #define CRITICAL_STRUCTURE (1<<2)
+#define DEPART_DESTRUCTION_IMMUNE (1<<3)
 
 //Weeds defines
 #define WEED "weed sac"
@@ -24,11 +25,20 @@
 #define STICKY_RESIN "sticky resin"
 #define RESIN_DOOR "resin door"
 
+//Special resin defines
+#define BULLETPROOF_WALL "bulletproof resin wall"
+#define FIREPROOF_WALL "fireproof resin wall"
+#define HARDY_WALL "hardy resin wall"
+
 //Xeno reagents defines
 #define DEFILER_NEUROTOXIN "Neurotoxin"
 #define DEFILER_HEMODILE "Hemodile"
 #define DEFILER_TRANSVITOX "Transvitox"
 #define DEFILER_OZELOMELYN "Ozelomelyn"
+
+//Baneling specific reagent define
+#define BANELING_ACID "Sulphuric acid"
+#define BANELING_ACID_ICON "spray_acid"
 
 #define TRAP_HUGGER "hugger"
 #define TRAP_SMOKE_NEURO "neurotoxin gas"
@@ -36,6 +46,16 @@
 #define TRAP_ACID_WEAK "weak acid"
 #define TRAP_ACID_NORMAL "acid"
 #define TRAP_ACID_STRONG "strong acid"
+
+//Xeno acid strength defines
+#define WEAK_ACID_STRENGTH 0.016
+#define REGULAR_ACID_STRENGTH 0.04
+#define STRONG_ACID_STRENGTH 0.1
+
+#define PUPPET_RECALL "recall puppet"
+#define PUPPET_SEEK_CLOSEST "seeking closest and attack order" //not xeno-usable
+#define PUPPET_ATTACK "seek and attack order"
+#define PUPPET_SCOUT "scouting order"
 
 //List of weed types
 GLOBAL_LIST_INIT(weed_type_list, typecacheof(list(
@@ -53,17 +73,17 @@ GLOBAL_LIST_INIT(weed_prob_list, list(
 
 //List of weed images
 GLOBAL_LIST_INIT(weed_images_list, list(
-		WEED = image('icons/mob/actions.dmi', icon_state = WEED),
-		STICKY_WEED = image('icons/mob/actions.dmi', icon_state = STICKY_WEED),
-		RESTING_WEED = image('icons/mob/actions.dmi', icon_state = RESTING_WEED),
-		AUTOMATIC_WEEDING = image('icons/mob/actions.dmi', icon_state = AUTOMATIC_WEEDING)
+		WEED = image('icons/Xeno/actions.dmi', icon_state = WEED),
+		STICKY_WEED = image('icons/Xeno/actions.dmi', icon_state = STICKY_WEED),
+		RESTING_WEED = image('icons/Xeno/actions.dmi', icon_state = RESTING_WEED),
+		AUTOMATIC_WEEDING = image('icons/Xeno/actions.dmi', icon_state = AUTOMATIC_WEEDING)
 		))
 
 //List of pheromone images
 GLOBAL_LIST_INIT(pheromone_images_list, list(
-		AURA_XENO_RECOVERY = image('icons/mob/actions.dmi', icon_state = AURA_XENO_RECOVERY),
-		AURA_XENO_WARDING = image('icons/mob/actions.dmi', icon_state = AURA_XENO_WARDING),
-		AURA_XENO_FRENZY = image('icons/mob/actions.dmi', icon_state = AURA_XENO_FRENZY),
+		AURA_XENO_RECOVERY = image('icons/Xeno/actions.dmi', icon_state = AURA_XENO_RECOVERY),
+		AURA_XENO_WARDING = image('icons/Xeno/actions.dmi', icon_state = AURA_XENO_WARDING),
+		AURA_XENO_FRENZY = image('icons/Xeno/actions.dmi', icon_state = AURA_XENO_FRENZY),
 		))
 
 //List of Defiler toxin types available for selection
@@ -81,7 +101,17 @@ GLOBAL_LIST_INIT(defiler_toxins_typecache_list, typecacheof(list(
 		/datum/reagent/toxin/xeno_transvitox,
 		/datum/reagent/toxin/xeno_neurotoxin,
 		/datum/reagent/toxin/xeno_sanguinal,
+		/datum/status_effect/stacking/intoxicated,
 		)))
+
+//List of Baneling chemical types available for selection
+GLOBAL_LIST_INIT(baneling_chem_type_list, list(
+		/datum/reagent/toxin/xeno_ozelomelyn,
+		/datum/reagent/toxin/xeno_hemodile,
+		/datum/reagent/toxin/xeno_transvitox,
+		/datum/reagent/toxin/xeno_neurotoxin,
+		/datum/reagent/toxin/acid,
+		))
 
 //List of plant types
 GLOBAL_LIST_INIT(plant_type_list, list(
@@ -101,37 +131,59 @@ GLOBAL_LIST_INIT(plant_images_list, list(
 
 //List of resin structure images
 GLOBAL_LIST_INIT(resin_images_list, list(
-		RESIN_WALL = image('icons/mob/actions.dmi', icon_state = RESIN_WALL),
-		STICKY_RESIN = image('icons/mob/actions.dmi', icon_state = STICKY_RESIN),
-		RESIN_DOOR = image('icons/mob/actions.dmi', icon_state = RESIN_DOOR)
+		RESIN_WALL = image('icons/Xeno/actions.dmi', icon_state = RESIN_WALL),
+		STICKY_RESIN = image('icons/Xeno/actions.dmi', icon_state = STICKY_RESIN),
+		RESIN_DOOR = image('icons/Xeno/actions.dmi', icon_state = RESIN_DOOR)
+		))
+
+//List of special resin structure images
+GLOBAL_LIST_INIT(resin_special_images_list, list(
+		BULLETPROOF_WALL = image('icons/Xeno/actions.dmi', icon_state = BULLETPROOF_WALL),
+		FIREPROOF_WALL = image('icons/Xeno/actions.dmi', icon_state = FIREPROOF_WALL),
+		HARDY_WALL = image('icons/Xeno/actions.dmi', icon_state = HARDY_WALL)
+))
+
+//List of puppeteer order images
+GLOBAL_LIST_INIT(puppeteer_order_images_list, list(
+		PUPPET_ATTACK = image('icons/Xeno/actions.dmi', icon_state = "enrage"),
+		PUPPET_SCOUT = image('icons/mob/actions.dmi', icon_state = "66"),
+		PUPPET_RECALL = image('icons/mob/actions.dmi', icon_state = "rally")
+		))
+
+//List of puppeteer pheromone images
+GLOBAL_LIST_INIT(puppeteer_phero_images_list, list(
+		AURA_XENO_BLESSFURY = image('icons/mob/actions.dmi', icon_state = "Fury"),
+		AURA_XENO_BLESSWARDING = image('icons/mob/actions.dmi', icon_state = "Warding"),
+		AURA_XENO_BLESSFRENZY = image('icons/mob/actions.dmi', icon_state = "Frenzy"),
 		))
 
 //xeno upgrade flags
 ///Message the hive when we buy this upgrade
 #define UPGRADE_FLAG_MESSAGE_HIVE (1<<0)
-#define UPGRADE_FLAG_ONETIME (1<<0)
+#define UPGRADE_FLAG_ONETIME (1<<1)
+#define UPGRADE_FLAG_USES_TACTICAL (1<<2)
 
-#define GHOSTS_CAN_TAKE_MINIONS "Smart Minions"
 
 GLOBAL_LIST_INIT(xeno_ai_spawnable, list(
 	/mob/living/carbon/xenomorph/beetle/ai,
 	/mob/living/carbon/xenomorph/mantis/ai,
 	/mob/living/carbon/xenomorph/scorpion/ai,
+	/mob/living/carbon/xenomorph/nymph/ai,
 ))
 
 ///Heals a xeno, respecting different types of damage
-#define HEAL_XENO_DAMAGE(xeno, amount) do { \
+#define HEAL_XENO_DAMAGE(xeno, amount, passive) do { \
 	var/fire_loss = xeno.getFireLoss(); \
 	if(fire_loss) { \
 		var/fire_heal = min(fire_loss, amount); \
 		amount -= fire_heal;\
-		xeno.adjustFireLoss(-fire_heal, TRUE); \
+		xeno.adjustFireLoss(-fire_heal, TRUE, passive); \
 	} \
 	var/brute_loss = xeno.getBruteLoss(); \
 	if(brute_loss) { \
 		var/brute_heal = min(brute_loss, amount); \
 		amount -= brute_heal; \
-		xeno.adjustBruteLoss(-brute_heal, TRUE); \
+		xeno.adjustBruteLoss(-brute_heal, TRUE, passive); \
 	} \
 } while(FALSE)
 
@@ -143,3 +195,24 @@ GLOBAL_LIST_INIT(xeno_ai_spawnable, list(
 	} else { \
 		xeno.remove_filter("overheal_vis"); \
 	}
+
+/// Used by the is_valid_for_resin_structure proc.
+/// 0 is considered valid , anything thats not 0 is false
+/// Simply not allowed by the area to build
+#define NO_ERROR 0
+#define ERROR_JUST_NO 1
+#define ERROR_NOT_ALLOWED 2
+/// No weeds here, but it is weedable
+#define ERROR_NO_WEED 3
+/// Area is not weedable
+#define ERROR_CANT_WEED 4
+/// Gamemode-fog prevents spawn-building
+#define ERROR_FOG 5
+/// Blocked by a xeno
+#define ERROR_BLOCKER 6
+/// No adjaecent wall or door tile
+#define ERROR_NO_SUPPORT 7
+/// Failed to other blockers such as egg, power plant , coocon , traps
+#define ERROR_CONSTRUCT 8
+
+#define PUPPET_WITHER_RANGE 15

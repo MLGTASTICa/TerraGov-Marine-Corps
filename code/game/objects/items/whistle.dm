@@ -1,5 +1,6 @@
 /obj/item/whistle
 	name = "\improper whistle"
+	icon = 'icons/Marine/marine-navigation.dmi'
 	desc = "A metal pea-whistle. Can be blown while held, or worn in the mouth"
 	icon_state = "whistle"
 	w_class = WEIGHT_CLASS_TINY
@@ -17,6 +18,8 @@
 
 /obj/item/whistle/attackby(obj/item/I, mob/user, params)
 	. = ..()
+	if(.)
+		return
 
 	if(user.wear_mask == src)
 		whistle_playsound(user)
@@ -44,7 +47,8 @@
 /obj/item/hailer
 	name = "hailer"
 	desc = "Used by obese officers to save their breath for running."
-	icon_state = "voice0"
+	icon = 'icons/obj/assemblies/new_assemblies.dmi'
+	icon_state = "voice"
 	item_state = "flashbang"	//looks exactly like a flash (and nothing like a flashbang)
 	w_class = WEIGHT_CLASS_TINY
 	flags_atom = CONDUCT

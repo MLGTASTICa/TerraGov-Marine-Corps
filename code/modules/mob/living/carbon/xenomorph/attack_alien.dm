@@ -35,20 +35,7 @@
 	return TRUE
 
 /mob/living/proc/can_xeno_slash(mob/living/carbon/xenomorph/X)
-	if(CHECK_BITFIELD(X.xeno_caste.caste_flags, CASTE_IS_INTELLIGENT)) // intelligent ignore restrictions
-		return TRUE
-	else if(isnestedhost(src))
-		for(var/obj/item/alien_embryo/embryo in src)
-			if(!embryo.issamexenohive(X))
-				continue
-			to_chat(X, span_warning("We should not harm this host! It has a sister inside."))
-			return FALSE
-	return TRUE
-
-/mob/living/carbon/human/can_xeno_slash(mob/living/carbon/xenomorph/X)
-	. = ..()
-	if(!.)
-		return FALSE
+	return !(status_flags & INCORPOREAL)
 
 /mob/living/proc/get_xeno_slash_zone(mob/living/carbon/xenomorph/X, set_location = FALSE, random_location = FALSE, no_head = FALSE)
 	return
@@ -60,7 +47,7 @@
 	else if(SEND_SIGNAL(X, COMSIG_XENOMORPH_ZONE_SELECT) & COMSIG_ACCURATE_ZONE)
 		affecting = get_limb(X.zone_selected)
 	else
-		affecting = get_limb(ran_zone(X.zone_selected, 70))
+		affecting = get_limb(ran_zone(X.zone_selected, XENO_DEFAULT_ACCURACY - X.xeno_caste.accuracy_malus))
 	if(!affecting || (random_location && !set_location) || (ignore_destroyed && !affecting.is_usable())) //No organ or it's destroyed, just get a random one
 		affecting = get_limb(ran_zone(null, 0))
 	if(!affecting || (no_head && affecting == get_limb("head")) || (ignore_destroyed && !affecting.is_usable()))
@@ -89,13 +76,14 @@
 		damage_mod += dam_bonus
 
 	if(!(signal_return & COMPONENT_BYPASS_ARMOR))
-		armor_block = get_soft_armor("melee", affecting)
+		armor_block = MELEE
 
 	for(var/i in damage_mod)
 		damage += i
 
+	var/armor_pen = X.xeno_caste.melee_ap
 	for(var/i in armor_mod)
-		armor_block *= i
+		armor_pen += i
 
 	if(!(signal_return & COMPONENT_BYPASS_SHIELDS))
 		damage = check_shields(COMBAT_MELEE_ATTACK, damage, "melee")
@@ -130,7 +118,9 @@
 	else //Normal xenomorph friendship with benefits
 		log_combat(X, src, log)
 
-	apply_damage(damage, BRUTE, affecting, armor_block, TRUE, TRUE, updating_health = TRUE) //This should slicey dicey
+	record_melee_damage(X, damage)
+	var/damage_done = apply_damage(damage, BRUTE, affecting, armor_block, TRUE, TRUE, TRUE, armor_pen) //This should slicey dicey
+	SEND_SIGNAL(X, COMSIG_XENOMORPH_POSTATTACK_LIVING, src, damage_done, damage_mod)
 
 	return TRUE
 
@@ -176,7 +166,7 @@
 	if(stat == DEAD)
 		if(istype(wear_ear, /obj/item/radio/headset/mainship))
 			var/obj/item/radio/headset/mainship/cam_headset = wear_ear
-			if(cam_headset.camera.status)
+			if(cam_headset?.camera?.status)
 				cam_headset.camera.toggle_cam(null, FALSE)
 				playsound(loc, "alien_claw_metal", 25, 1)
 				X.do_attack_animation(src, ATTACK_EFFECT_CLAW)
@@ -199,18 +189,21 @@
 		return FALSE
 
 //Every other type of nonhuman mob //MARKER OVERRIDE
-/mob/living/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = 0, isrightclick = FALSE)
+/mob/living/attack_alien(mob/living/carbon/xenomorph/X, damage_amount = X.xeno_caste.melee_damage, damage_type = BRUTE, damage_flag = "", effects = TRUE, armor_penetration = X.xeno_caste.melee_ap, isrightclick = FALSE)
 	if(X.status_flags & INCORPOREAL)
 		return FALSE
 
-	if (X.fortify)
+	if (X.fortify || X.behemoth_charging)
 		return FALSE
+
+	SEND_SIGNAL(X, COMSIG_XENOMORPH_ATTACK_LIVING, src, damage_amount, X.xeno_caste.melee_damage * X.xeno_melee_damage_modifier)
 
 	switch(X.a_intent)
 		if(INTENT_HELP)
 			if(on_fire)
 				X.visible_message(span_danger("[X] stares at [src]."), span_notice("We stare at the roasting [src], toasty."), null, 5)
 				return FALSE
+
 			X.visible_message(span_notice("\The [X] caresses [src] with its scythe-like arm."), \
 			span_notice("We caress [src] with our scythe-like arm."), null, 5)
 			return FALSE
