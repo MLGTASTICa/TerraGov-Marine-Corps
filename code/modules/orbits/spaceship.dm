@@ -156,7 +156,7 @@ GLOBAL_VAR_INIT(current_orbit,STANDARD_ORBIT)
 /obj/machinery/computer/navigation/proc/do_orbit_checks(direction)
 	var/current_orbit = GLOB.current_orbit
 
-	if(!can_change_orbit(current_orbit, direction)
+	if(!can_change_orbit(current_orbit, direction))
 		return
 
 	message_admins("[ADMIN_TPMONTY(usr)] Has sent the ship [direction == "UP" ? "UPWARD" : "DOWNWARD"] in orbit")
